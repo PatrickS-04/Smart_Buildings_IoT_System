@@ -1,0 +1,422 @@
+﻿@page "/"
+@inject IJSRuntime JS
+
+<PageTitle>Sensor Dashboard</PageTitle>
+
+<div class="dashboard">
+    <h1>Building Telemetry</h1>
+
+    <div class="filter-zones">
+        <label for="zonefilter">View a Main Zone</label>
+        <select id="zonefilter" class="form-control" @bind:after="OnZoneChanged" @bind="_selectedZone">
+            <option value="">All Zones</option>
+            @foreach (var zone in MainZones)
+            {
+                <option value="@zone">@zone</option>
+            }
+        </select>
+    </div>
+
+    <section class="kpi-grid" aria-label="Building summary">
+        <div class="kpi-card">
+            <p class="kpi-label">Sensors online</p>
+            <p class="kpi-value">@CurrentSnapshot.SensorsOnline<span class="kpi-value-muted"> / @CurrentSnapshot.SensorsTotal</span></p>
+        </div>
+        <div class="kpi-card">
+            <p class="kpi-label">Avg temperature</p>
+            <p class="kpi-value">@CurrentSnapshot.AvgTemperature.ToString("0.0")°C</p>
+        </div>
+        <div class="kpi-card">
+            <p class="kpi-label">Open alerts</p>
+            <p class="kpi-value kpi-value-warn">@CurrentSnapshot.OpenAlerts</p>
+        </div>
+        <div class="kpi-card">
+            <p class="kpi-label">Energy today</p>
+            <p class="kpi-value">@CurrentSnapshot.EnergyTodayKwh.ToString("N0")<span class="kpi-value-muted"> kWh</span></p>
+        </div>
+    </section>
+
+    <section class="status-section">
+        <h2>Sensor status — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+        <div class="status-legend">
+            <span><i class="legend-dot" style="background:var(--status-ok)"></i>Online</span>
+            <span><i class="legend-dot" style="background:var(--status-warn)"></i>Warning</span>
+            <span><i class="legend-dot" style="background:var(--status-critical)"></i>Offline</span>
+        </div>
+        <div class="status-panel">
+            <div class="status-groups">
+                @foreach (var group in CurrentSnapshot.SubZoneStatuses)
+                {
+                    <div class="status-group">
+                        <p class="status-group-name">@group.SubZoneName</p>
+                        <div class="status-group-sensors">
+                            @foreach (var sensor in group.Sensors)
+                            {
+                                <div class="sensor-status-chip" title="@group.SubZoneName — @sensor.Category @sensor.ShortId — @SeverityLabel(sensor.Severity)">
+                                    <span class="status-dot @sensor.Severity"></span>
+                                    <span class="sensor-status-label">@sensor.Category · @sensor.ShortId</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="metrics-section">
+        <h2>Readings by category — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+        <div class="metric-groups">
+            @foreach (var group in BuildMetricGroups(CurrentSnapshot))
+            {
+                <div class="metric-group">
+                    <p class="metric-group-name">@group.CategoryName</p>
+                    <div class="metric-tiles">
+                        @foreach (var metric in group.Metrics)
+                        {
+                            <div class="metric-tile">
+                                <p class="metric-tile-label">@metric.Label</p>
+                                <p class="metric-tile-value">@metric.Value</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="chart-section">
+        <h2>Temperature trend, last 24h — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+        <div class="chart-legend">
+            @foreach (var series in CurrentSnapshot.TempSeries)
+            {
+                <span><i class="legend-dot" style="background:@series.Color"></i>@series.Label</span>
+            }
+        </div>
+        <div class="chart-wrap">
+            <canvas id="tempTrendChart"></canvas>
+        </div>
+    </section>
+
+    <section class="chart-section">
+        <h2>Energy use by @(_selectedZone == "" ? "floor" : "sub-zone"), today</h2>
+        <div class="chart-wrap chart-wrap-short">
+            <canvas id="floorEnergyChart"></canvas>
+        </div>
+    </section>
+
+    <section class="alerts-section">
+        <h2>Recent alerts</h2>
+        <ul class="alert-list">
+            @foreach (var alert in RecentAlerts)
+            {
+                <li class="alert-item">
+                    <span class="status-dot @alert.Severity"></span>
+                    <div class="alert-body">
+                        <p class="alert-title">@alert.Title</p>
+                        <p class="alert-meta">@alert.Location</p>
+                    </div>
+                    <span class="alert-time">@alert.TimeAgo</span>
+                </li>
+            }
+        </ul>
+    </section>
+</div>
+
+@code {
+    private static readonly string[] MainZones =
+    {
+        "Occupied Spaces", "Amenities and Public Areas", "Technical and Utility",
+        "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
+    };
+
+    private readonly string[] _hourLabels =
+        { "00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00" };
+
+    private record TempSeries(string Label, string Color, double[] Data);
+
+    private record MetricValue(string Label, string Value);
+
+    // Groups metric tiles under one of the 5 sensor category groups from
+    // SensorRegistration.razor, so the dashboard's category breakdown lines
+    // up with what a user actually registers a sensor as.
+    private record MetricGroup(string CategoryName, MetricValue[] Metrics);
+
+    // Severity matches the CSS classes on .status-dot: "" = online (green/teal),
+    // "warn" = warning (amber), "critical" = offline/fault (red).
+    private record SensorStatusItem(string Category, string ShortId, string Severity);
+
+    // A room/sub-zone can contain more than one sensor (e.g. a CO2 sensor and
+    // a motion sensor in the same office), so sensors are grouped under the
+    // sub-zone they're deployed in rather than one entry per sub-zone.
+    private record SubZoneStatus(string SubZoneName, SensorStatusItem[] Sensors);
+
+    private record ZoneSnapshot(
+        int SensorsOnline, int SensorsTotal, double AvgTemperature, int OpenAlerts, double EnergyTodayKwh,
+        TempSeries[] TempSeries, string[] EnergyLabels, double[] EnergyData, SubZoneStatus[] SubZoneStatuses);
+
+    // Placeholder per-sensor status data, grouped by sub-zone (matching
+    // SensorRegistration.razor's SubZones dictionary). Each sub-zone can hold
+    // more than one sensor - a room commonly has both an environmental sensor
+    // and a motion/occupancy sensor, for example. Once sensor registration and
+    // the telemetry simulator are wired to a shared service, each entry here
+    // would instead be one real registered sensor's live status.
+    private static readonly Dictionary<string, SubZoneStatus[]> _sensorStatusesByZone = new()
+    {
+        ["Occupied Spaces"] = new[]
+        {
+            new SubZoneStatus("Open Offices", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-001", ""),
+                new SensorStatusItem("Motion", "SN-002", ""),
+            }),
+            new SubZoneStatus("Private Offices", new[]
+            {
+                new SensorStatusItem("CO2", "SN-003", ""),
+                new SensorStatusItem("Motion", "SN-004", ""),
+            }),
+            new SubZoneStatus("Executive Suites", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-005", ""),
+            }),
+            new SubZoneStatus("Meeting/Conference Rooms", new[]
+            {
+                new SensorStatusItem("CO2", "SN-006", "warn"),
+                new SensorStatusItem("Motion", "SN-007", ""),
+            }),
+        },
+        ["Amenities and Public Areas"] = new[]
+        {
+            new SubZoneStatus("Main Lobby", new[]
+            {
+                new SensorStatusItem("Motion", "SN-010", ""),
+                new SensorStatusItem("Temperature", "SN-011", ""),
+            }),
+            new SubZoneStatus("Lift Lobby", new[] { new SensorStatusItem("Motion", "SN-012", "") }),
+            new SubZoneStatus("Corridor/Hallway", new[] { new SensorStatusItem("Motion", "SN-013", "") }),
+            new SubZoneStatus("Restrooms", new[] { new SensorStatusItem("Occupancy", "SN-014", "") }),
+            new SubZoneStatus("Cafeteria", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-015", ""),
+                new SensorStatusItem("CO2", "SN-016", ""),
+            }),
+            new SubZoneStatus("Gym", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-017", ""),
+                new SensorStatusItem("Occupancy", "SN-018", ""),
+            }),
+        },
+        ["Technical and Utility"] = new[]
+        {
+            new SubZoneStatus("Server Rooms/Data Centers", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-020", "critical"),
+                new SensorStatusItem("Humidity", "SN-021", ""),
+            }),
+            new SubZoneStatus("Electrical Rooms", new[]
+            {
+                new SensorStatusItem("Power", "SN-022", "warn"),
+                new SensorStatusItem("Temperature", "SN-023", ""),
+            }),
+            new SubZoneStatus("HVAC Plant Rooms", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-024", ""),
+                new SensorStatusItem("Power", "SN-025", ""),
+            }),
+        },
+        ["Facilities and Logistics"] = new[]
+        {
+            new SubZoneStatus("Loading Docks", new[]
+            {
+                new SensorStatusItem("Motion", "SN-030", ""),
+                new SensorStatusItem("Temperature", "SN-031", ""),
+            }),
+            new SubZoneStatus("Janitorial Rooms/Closets", new[] { new SensorStatusItem("Motion", "SN-032", "") }),
+            new SubZoneStatus("Waste/Storage Depots", new[] { new SensorStatusItem("Temperature", "SN-033", "") }),
+        },
+        ["Structural and Safety"] = new[]
+        {
+            new SubZoneStatus("Emergency Stairwells", new[] { new SensorStatusItem("Motion", "SN-040", "") }),
+            new SubZoneStatus("Lift Shafts", new[] { new SensorStatusItem("Motion", "SN-041", "") }),
+            new SubZoneStatus("Fire Command Centers", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-042", ""),
+                new SensorStatusItem("Power", "SN-043", ""),
+            }),
+        },
+        ["Exterior and Perimeter"] = new[]
+        {
+            new SubZoneStatus("Parking Garages", new[]
+            {
+                new SensorStatusItem("Motion", "SN-050", ""),
+                new SensorStatusItem("Temperature", "SN-051", ""),
+            }),
+            new SubZoneStatus("Rooftop", new[]
+            {
+                new SensorStatusItem("Temperature", "SN-052", ""),
+                new SensorStatusItem("Power", "SN-053", ""),
+            }),
+            new SubZoneStatus("Main Entrance", new[] { new SensorStatusItem("Motion", "SN-054", "") }),
+        },
+    };
+
+    // Placeholder per-zone data - once sensor registration and real telemetry
+    // exist, replace this dictionary with data pulled from a shared service
+    // (see explanation below the code).
+    private readonly Dictionary<string, ZoneSnapshot> _zoneData = new()
+    {
+        [""] = new ZoneSnapshot(428, 450, 22.4, 3, 1240,
+            new[]
+            {
+                new TempSeries("Offices (Zone A)", "#35d0b8", new[] { 21.2, 21.0, 21.4, 22.1, 22.8, 23.0, 22.5, 21.8 }),
+                new TempSeries("Server room (Zone B)", "#f5a623", new[] { 19.5, 19.3, 19.6, 20.1, 20.4, 20.6, 20.2, 19.8 }),
+                new TempSeries("Lobby (Zone C)", "#ff6b6b", new[] { 20.0, 19.6, 20.5, 22.4, 23.8, 24.1, 22.9, 21.0 }),
+            },
+            new[] { "Floor 4", "Floor 3", "Floor 2", "Floor 1" },
+            new[] { 230.0, 340.0, 260.0, 410.0 },
+            _sensorStatusesByZone.Values.SelectMany(s => s).ToArray()),
+
+        ["Occupied Spaces"] = new ZoneSnapshot(96, 100, 22.9, 1, 340,
+            new[] { new TempSeries("Occupied Spaces", "#35d0b8", new[] { 21.8, 21.5, 22.0, 22.9, 23.4, 23.6, 23.1, 22.3 }) },
+            new[] { "Open Offices", "Private Offices", "Exec Suites", "Meeting Rooms" },
+            new[] { 140.0, 90.0, 60.0, 50.0 },
+            _sensorStatusesByZone["Occupied Spaces"]),
+
+        ["Amenities and Public Areas"] = new ZoneSnapshot(54, 60, 21.6, 0, 210,
+            new[] { new TempSeries("Amenities and Public Areas", "#35d0b8", new[] { 21.0, 20.8, 21.2, 21.9, 22.4, 22.6, 22.1, 21.4 }) },
+            new[] { "Main Lobby", "Lift Lobby", "Corridor", "Restrooms", "Cafeteria", "Gym" },
+            new[] { 60.0, 20.0, 15.0, 25.0, 55.0, 35.0 },
+            _sensorStatusesByZone["Amenities and Public Areas"]),
+
+        ["Technical and Utility"] = new ZoneSnapshot(88, 92, 19.8, 2, 480,
+            new[] { new TempSeries("Technical and Utility", "#f5a623", new[] { 19.5, 19.3, 19.6, 20.1, 20.4, 20.6, 20.2, 19.8 }) },
+            new[] { "Server Rooms", "Electrical Rooms", "HVAC Plant" },
+            new[] { 310.0, 90.0, 80.0 },
+            _sensorStatusesByZone["Technical and Utility"]),
+
+        ["Facilities and Logistics"] = new ZoneSnapshot(40, 44, 20.9, 0, 95,
+            new[] { new TempSeries("Facilities and Logistics", "#35d0b8", new[] { 20.2, 20.0, 20.4, 21.1, 21.6, 21.8, 21.3, 20.6 }) },
+            new[] { "Loading Docks", "Janitorial", "Waste/Storage" },
+            new[] { 50.0, 20.0, 25.0 },
+            _sensorStatusesByZone["Facilities and Logistics"]),
+
+        ["Structural and Safety"] = new ZoneSnapshot(30, 32, 21.1, 0, 60,
+            new[] { new TempSeries("Structural and Safety", "#35d0b8", new[] { 20.9, 20.7, 21.0, 21.4, 21.7, 21.9, 21.5, 21.0 }) },
+            new[] { "Stairwells", "Lift Shafts", "Fire Command" },
+            new[] { 20.0, 15.0, 25.0 },
+            _sensorStatusesByZone["Structural and Safety"]),
+
+        ["Exterior and Perimeter"] = new ZoneSnapshot(20, 22, 20.0, 0, 55,
+            new[] { new TempSeries("Exterior and Perimeter", "#ff6b6b", new[] { 19.0, 18.5, 19.8, 21.5, 22.8, 23.0, 21.2, 19.5 }) },
+            new[] { "Parking Garage", "Rooftop", "Main Entrance" },
+            new[] { 25.0, 10.0, 20.0 },
+            _sensorStatusesByZone["Exterior and Perimeter"]),
+    };
+
+    private string _selectedZone = "";
+
+    private ZoneSnapshot CurrentSnapshot => _zoneData[_selectedZone];
+
+    private record AlertItem(string Severity, string Title, string Location, string TimeAgo);
+
+    private readonly List<AlertItem> RecentAlerts = new()
+    {
+        new AlertItem("critical", "Water leak detected", "Server room, floor 2", "2 min ago"),
+        new AlertItem("warn", "CO2 above threshold", "Conference room 3A", "18 min ago"),
+        new AlertItem("", "Door left open, resolved", "Loading bay", "1 hr ago"),
+    };
+
+    private static string SeverityLabel(string severity) => severity switch
+    {
+        "warn" => "Warning",
+        "critical" => "Offline",
+        _ => "Online",
+    };
+
+    // Placeholder: derives a plausible reading for each of the 5 registration
+    // category groups from the zone's existing headline numbers (temperature,
+    // energy, sensor count, open alerts). Once real telemetry exists, replace
+    // this with actual per-category aggregates computed from live sensor
+    // readings instead of derived-from-other-numbers estimates.
+    private static MetricGroup[] BuildMetricGroups(ZoneSnapshot zone)
+    {
+        var humidity = Math.Clamp(40 + (zone.AvgTemperature - 18) * 1.5, 30, 65);
+        var co2 = Math.Clamp(450 + zone.SensorsOnline * 0.8, 400, 1200);
+        var airQuality = co2 < 700 ? "Good" : co2 < 1000 ? "Moderate" : "Poor";
+        var light = Math.Clamp(300 + zone.EnergyTodayKwh * 0.3, 150, 900);
+
+        var motionEvents = (int)Math.Round(zone.SensorsOnline * 0.3);
+        var presenceRooms = (int)Math.Round(zone.SensorsOnline / 4.0);
+        var peopleCount = (int)Math.Round(zone.SensorsOnline * 0.7);
+
+        var powerNow = zone.EnergyTodayKwh / 24;
+        var waterUsage = zone.EnergyTodayKwh * 0.01;
+        var peakIndex = zone.EnergyData.Length > 0
+            ? Array.IndexOf(zone.EnergyData, zone.EnergyData.Max())
+            : -1;
+        var peakArea = peakIndex >= 0 ? zone.EnergyLabels[peakIndex] : "—";
+
+        var vibration = 0.01 + zone.OpenAlerts * 0.02;
+        var pipePressure = 4.0 + (zone.AvgTemperature - 20) * 0.05;
+
+        return new[]
+        {
+            new MetricGroup("Environmental", new[]
+            {
+                new MetricValue("Humidity", $"{humidity:0}%"),
+                new MetricValue("CO2", $"{co2:0} ppm"),
+                new MetricValue("Air quality", airQuality),
+                new MetricValue("Light level", $"{light:0} lux"),
+            }),
+            new MetricGroup("Occupancy and Motion", new[]
+            {
+                new MetricValue("Motion events today", $"{motionEvents}"),
+                new MetricValue("Rooms with presence", $"{presenceRooms}"),
+                new MetricValue("People count", $"{peopleCount}"),
+            }),
+            new MetricGroup("Energy and Power Consumption", new[]
+            {
+                new MetricValue("Power draw now", $"{powerNow:0.0} kW"),
+                new MetricValue("Water usage today", $"{waterUsage:0.0} kL"),
+                new MetricValue("Peak sub-meter", peakArea),
+            }),
+            new MetricGroup("Safety and Security", new[]
+            {
+                new MetricValue("Active alerts", $"{zone.OpenAlerts}"),
+            }),
+            new MetricGroup("Structural and Facility", new[]
+            {
+                new MetricValue("Vibration", $"{vibration:0.00} g"),
+                new MetricValue("Pipe pressure", $"{pipePressure:0.0} bar"),
+            }),
+        };
+    }
+
+    private async Task OnZoneChanged()
+    {
+        await RenderChartsAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RenderChartsAsync();
+        }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        var snapshot = CurrentSnapshot;
+
+        var series = snapshot.TempSeries
+            .Select(s => new { label = s.Label, color = s.Color, data = s.Data })
+            .ToArray();
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderTemperatureTrend",
+            "tempTrendChart", _hourLabels, series);
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderFloorEnergy",
+            "floorEnergyChart", snapshot.EnergyLabels, snapshot.EnergyData);
+    }
+}

@@ -1,0 +1,279 @@
+﻿@page "/sensorregistration"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Sensor Registration</PageTitle>
+
+<div class="registration">
+    <h1>Sensor Registration</h1>
+
+    <section class="register-sensor-form">
+        <h2>Register a Sensor</h2>
+
+        <EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator/>
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="deviceMacAddress">MAC Address / Unique Identifier</label>
+                    <InputText id="deviceMacAddress" class="form-control" @bind-Value="_model.DeviceMacAddress" placeholder="AA:BB:CC:DD:EE:FF"/>
+                    <ValidationMessage For="() => _model.DeviceMacAddress"/>
+                </div>
+
+                <div class="form-field">
+                    <label for="mainzone">Main Zone</label>
+                    <InputSelect id="mainzone" class="form-control" @bind-Value="_model.MainZone" @bind-Value:after="OnMainZoneChanged">
+                        <option value="">Select a Main Zone</option>
+                        @foreach (var mainZone in MainZones)
+                        {
+                            <option value="@mainZone">@mainZone</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => _model.MainZone"/>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_model.MainZone))
+                {
+                    <div class="form-field">
+                        <label for="subzone">Sub Zone</label>
+                        <InputSelect id="subzone" class="form-control" @bind-Value="_model.SubZone">
+                            <option value="">Select a Sub-Zone</option>
+                            @foreach (var subZone in CurrentSubZones)
+                            {
+                                <option value="@subZone">@subZone</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => _model.SubZone"/>
+                    </div>
+                }
+
+                <div class="form-field">
+                    <label for="floor">Floor</label>
+                    <InputText id="floor" class="form-control" @bind-Value="_model.Floor" placeholder="E.g. Ground Floor, Floor 3, Basement 1"/>
+                    <ValidationMessage For="() => _model.Floor"/>
+                </div>
+
+                <div class="form-field">
+                    <label for="roomOrArea">Room / Area (optional)</label>
+                    <InputText id="roomOrArea" class="form-control" @bind-Value="_model.RoomOrArea" placeholder="E.g. Room 204, Bay 3, Rack A2 - leave blank for an open floor/area"/>
+                    <ValidationMessage For="() => _model.RoomOrArea"/>
+                </div>
+
+                <div class="form-field">
+                    <label for="category">Sensor Category</label>
+                    <InputSelect id="category" class="form-control" @bind-Value="_model.Category" @bind-Value:after="OnCategoryChanged">
+                        <option value="">Select a Category</option>
+                        @foreach (var category in Categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => _model.Category"/>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_model.Category))
+                {
+                    <div class="form-field">
+                        <label for="sensortype">Sensor Type</label>
+                        <InputSelect id="sensortype" class="form-control" @bind-Value="_model.SensorType">
+                            <option value="">Select a Sensor Type</option>
+                            @foreach (var type in CurrentSensorTypes)
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => _model.SensorType"/>
+                    </div>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="attachments">Attach Configuration files, deployment photos, or hardware log files</label>
+                <InputFile id="attachments" multiple class="form-control" @key="_fileInputKey" OnChange="OnFilesSelected"/>
+                @if (_pendingFiles.Count > 0)
+                {
+                    <ul class="pending-files">
+                        @foreach (var file in _pendingFiles)
+                        {
+                            <li>@file.Name <span class="file-size">(@FormatBytes(file.Size))</span></li>
+                        }
+                    </ul>
+                }
+            </div>
+            <button type="submit" class="btn btn-primary submit-registration">Register Sensor</button>
+        </EditForm>
+    </section>
+
+    <section class="registered-sensors-list">
+        <h2>Registered Sensors <span class="registered-sensor-count">(@_registeredSensors.Count)</span></h2>
+
+        @if (_registeredSensors.Count == 0)
+        {
+            <p class="empty-state">No Sensors are registered yet. Add a Sensor by using the form above.</p>
+        }
+        else
+        {
+            <ul class="sensor-list">
+                @foreach (var sensor in _registeredSensors)
+                {
+                    <li class="sensor-card">
+                        <div class="sensor-card-header">
+                            <span class="device-id">@sensor.DeviceMacAddress</span>
+                            <span class="category-badge @CategoryCssClass(sensor.Category)">@sensor.Category</span>
+                        </div>
+                        <p class="sensor-type">@sensor.SensorType</p>
+                        <p class="sensor-location">@sensor.MainZone: @sensor.SubZone — @LocationLabel(sensor)</p>
+                        @if (sensor.attachments.Count > 0)
+                        {
+                            <ul class="attachment-list">
+                                @foreach (var file in sensor.attachments)
+                                {
+                                    <li>@file.Name <span class="file-size">(@FormatBytes(file.SizeBytes))</span></li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="no-attachments">No files attached</p>
+                        }
+                        <button type="button" class="remove-btn" @onclick="() => RemoveSensor(sensor)">Remove</button>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+
+@code {
+    private static readonly string[] MainZones =
+    {
+        "Occupied Spaces", "Amenities and Public Areas", "Technical and Utility", 
+        "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
+    };
+
+    private static readonly Dictionary<string, string[]> SubZones = new()
+    {
+        ["Occupied Spaces"] = new[] { "Open Offices", "Private Offices", "Executive Suites", "Meeting/Conference Rooms" },
+        ["Amenities and Public Areas"] = new[] { "Main Lobby", "Lift Lobby", "Corridor/Hallway", "Restrooms", "Cafeteria", "Gym" },
+        ["Technical and Utility"] = new[] { "Server Rooms/Data Centers", "Electrical Rooms", "HVAC Plant Rooms" },
+        ["Facilities and Logistics"] = new[] { "Loading Docks", "Janitorial Rooms/Closets", "Waste/Storage Depots" },
+        ["Structural and Safety"] = new[] { "Emergency Stairwells", "Lift Shafts", "Fire Command Centers" },
+        ["Exterior and Perimeter"] = new[] { "Parking Garages", "Rooftop", "Main Entrance" }
+    };
+
+    private static readonly string[] Categories =
+    {
+        "Environmental", "Occupancy and Motion", "Safety and Security", "Structural and Facility", "Energy and Power Consumption"    
+    };
+
+    // Specific sensor types available under each category group.
+    private static readonly Dictionary<string, string[]> SensorTypesByCategory = new()
+    {
+        ["Environmental"] = new[] { "Temperature", "Humidity", "CO2 (Carbon Dioxide)", "Air Quality (VOCs)", "Light Level (Lux)" },
+        ["Occupancy and Motion"] = new[] { "Motion (PIR)", "Presence", "People Counting" },
+        ["Energy and Power Consumption"] = new[] { "Power Meters", "Energy Sub-meters", "Utility Meters" },
+        ["Safety and Security"] = new[] { "Smoke and Fire", "Water Leak", "Door and Window Contacts", "Glass Break" },
+        ["Structural and Facility"] = new[] { "Vibration", "Pipe Pressure" },
+    };
+
+    private string[] CurrentSensorTypes =>
+        string.IsNullOrEmpty(_model.Category) ? Array.Empty<string>() : SensorTypesByCategory.GetValueOrDefault(_model.Category, Array.Empty<string>());
+
+    private string[] CurrentSubZones =>
+        string.IsNullOrEmpty(_model.MainZone) ? Array.Empty<string>() : SubZones.GetValueOrDefault(_model.MainZone, Array.Empty<string>());
+
+    private record AttachedFile(string Name, long SizeBytes);
+    private record RegisteredSensor(string DeviceMacAddress, string MainZone, string SubZone, string Floor, string RoomOrArea, string Category, string SensorType, List<AttachedFile> attachments);
+
+    private SensorRegistrationModel _model = new();
+    private List<IBrowserFile> _pendingFiles = new();
+    private Guid _fileInputKey = Guid.NewGuid();
+    private readonly List<RegisteredSensor> _registeredSensors = new();
+
+    private void HandleValidSubmit()
+    {
+        var attachments = _pendingFiles
+            .Select(file => new AttachedFile(file.Name, file.Size)).ToList();
+
+        _registeredSensors.Insert(0, new RegisteredSensor(
+            _model.DeviceMacAddress, _model.MainZone, _model.SubZone, _model.Floor, _model.RoomOrArea, _model.Category, _model.SensorType, attachments));
+
+        _model = new SensorRegistrationModel();
+        _pendingFiles = new();
+        _fileInputKey = Guid.NewGuid();
+    }
+
+    private void RemoveSensor(RegisteredSensor sensor)
+    {
+        _registeredSensors.Remove(sensor);
+    }
+
+    private static string CategoryCssClass(string category) => category switch
+    {
+        "Environmental" => "category-environmental",
+        "Occupancy and Motion" => "category-occupancy",
+        "Energy and Power Consumption" => "category-energy",
+        "Safety and Security" => "category-safety",
+        "Structural and Facility" => "category-structural",
+        _ => ""
+    };
+
+    private static string LocationLabel(RegisteredSensor sensor) =>
+        string.IsNullOrWhiteSpace(sensor.RoomOrArea)
+            ? sensor.Floor
+            : $"{sensor.Floor}, {sensor.RoomOrArea}";
+
+    private void OnMainZoneChanged()
+    {
+        _model.SubZone = string.Empty;
+    }
+
+    private void OnCategoryChanged()
+    {
+        _model.SensorType = string.Empty;
+    }
+
+    private void OnFilesSelected(InputFileChangeEventArgs events)
+    {
+        _pendingFiles = events.GetMultipleFiles(10).ToList();
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024.0:0.#} KB";
+        }
+
+        return $"{bytes / (1024.0 * 1024):0.#} MB";
+    }
+
+    private class SensorRegistrationModel
+    {
+        [Required(ErrorMessage = "Device MAC Address or Unique Identifier is required")]
+        public string DeviceMacAddress { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Sensor Main Zone deployment is required")]
+        public string MainZone { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Sensor Sub-Zone deployment is required")]
+        public string SubZone { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Floor is required")]
+        public string Floor { get; set; } = string.Empty;
+
+        // Optional: some spaces (open-plan floors, parking levels, a single
+        // server room per floor) don't have a distinct room number.
+        public string RoomOrArea { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Sensor Category is required")]
+        public string Category { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Sensor Type is required")]
+        public string SensorType { get; set; } = string.Empty;
+    }
+}
