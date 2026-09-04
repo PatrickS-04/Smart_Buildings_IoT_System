@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject IJSRuntime JS
+@implements IDisposable
 
 <PageTitle>Sensor Dashboard</PageTitle>
 
@@ -144,16 +145,61 @@
 
     // Severity matches the CSS classes on .status-dot: "" = online (green/teal),
     // "warn" = warning (amber), "critical" = offline/fault (red).
-    private record SensorStatusItem(string Category, string ShortId, string Severity);
+    // A class, not a record, because the simulator flips Severity in place.
+    private class SensorStatusItem
+    {
+        public string Category { get; }
+        public string ShortId { get; }
+        public string Severity { get; set; }
+
+        public SensorStatusItem(string category, string shortId, string severity)
+        {
+            Category = category;
+            ShortId = shortId;
+            Severity = severity;
+        }
+    }
 
     // A room/sub-zone can contain more than one sensor (e.g. a CO2 sensor and
     // a motion sensor in the same office), so sensors are grouped under the
     // sub-zone they're deployed in rather than one entry per sub-zone.
     private record SubZoneStatus(string SubZoneName, SensorStatusItem[] Sensors);
 
+    // Continuous, event-driven, and cumulative readings that the simulator
+    // updates every tick. Split into its own mutable class (not a record)
+    // because these values change in place on a timer.
+    private class LiveMetrics
+    {
+        // Continuous (analog) - random-walked smoothly each tick.
+        public double Humidity;
+        public double Co2;
+        public double LightLevel;
+        public double Vibration;
+        public double PipePressure;
+        public double PowerDrawNow;
+
+        // Event-driven - mostly still, jumps by a small integer occasionally.
+        public int MotionEventsToday;
+        public int RoomsWithPresence;
+        public int PeopleCount;
+
+        // Cumulative - only ever increases (a meter reading, not a live measurement).
+        public double EnergyTodayKwh;
+        public double WaterUsageTodayKwh;
+    }
+
     private record ZoneSnapshot(
-        int SensorsOnline, int SensorsTotal, double AvgTemperature, int OpenAlerts, double EnergyTodayKwh,
-        TempSeries[] TempSeries, string[] EnergyLabels, double[] EnergyData, SubZoneStatus[] SubZoneStatuses);
+        TempSeries[] TempSeries, string[] EnergyLabels, double[] EnergyData,
+        SubZoneStatus[] SubZoneStatuses, LiveMetrics Metrics)
+    {
+        // Derived, not stored - these can never disagree with the sensor list
+        // or the chart, because they're computed from the same data those render.
+        public int SensorsTotal => SubZoneStatuses.Sum(g => g.Sensors.Length);
+        public int SensorsOnline => SubZoneStatuses.SelectMany(g => g.Sensors).Count(s => s.Severity != "critical");
+        public int OpenAlerts => SubZoneStatuses.SelectMany(g => g.Sensors).Count(s => s.Severity != "");
+        public double AvgTemperature => Math.Round(TempSeries.Average(s => s.Data[^1]), 1);
+        public double EnergyTodayKwh => Metrics.EnergyTodayKwh;
+    }
 
     // Placeholder per-sensor status data, grouped by sub-zone (matching
     // SensorRegistration.razor's SubZones dictionary). Each sub-zone can hold
@@ -184,7 +230,7 @@
                 new SensorStatusItem("CO2", "SN-006", "warn"),
                 new SensorStatusItem("Motion", "SN-007", ""),
             }),
-        },
+    },
         ["Amenities and Public Areas"] = new[]
         {
             new SubZoneStatus("Main Lobby", new[]
@@ -205,7 +251,7 @@
                 new SensorStatusItem("Temperature", "SN-017", ""),
                 new SensorStatusItem("Occupancy", "SN-018", ""),
             }),
-        },
+    },
         ["Technical and Utility"] = new[]
         {
             new SubZoneStatus("Server Rooms/Data Centers", new[]
@@ -223,7 +269,7 @@
                 new SensorStatusItem("Temperature", "SN-024", ""),
                 new SensorStatusItem("Power", "SN-025", ""),
             }),
-        },
+    },
         ["Facilities and Logistics"] = new[]
         {
             new SubZoneStatus("Loading Docks", new[]
@@ -233,7 +279,7 @@
             }),
             new SubZoneStatus("Janitorial Rooms/Closets", new[] { new SensorStatusItem("Motion", "SN-032", "") }),
             new SubZoneStatus("Waste/Storage Depots", new[] { new SensorStatusItem("Temperature", "SN-033", "") }),
-        },
+    },
         ["Structural and Safety"] = new[]
         {
             new SubZoneStatus("Emergency Stairwells", new[] { new SensorStatusItem("Motion", "SN-040", "") }),
@@ -260,12 +306,27 @@
         },
     };
 
-    // Placeholder per-zone data - once sensor registration and real telemetry
-    // exist, replace this dictionary with data pulled from a shared service
-    // (see explanation below the code).
-    private readonly Dictionary<string, ZoneSnapshot> _zoneData = new()
+    private static LiveMetrics SeedMetrics(double energyToday) => new()
     {
-        [""] = new ZoneSnapshot(428, 450, 22.4, 3, 1240,
+        Humidity = 45,
+        Co2 = 600,
+        LightLevel = 400,
+        Vibration = 0.02,
+        PipePressure = 4.0,
+        PowerDrawNow = energyToday / 24,
+        MotionEventsToday = 0,
+        RoomsWithPresence = 0,
+        PeopleCount = 0,
+        EnergyTodayKwh = energyToday,
+        WaterUsageTodayKwh = energyToday * 0.01,
+    };
+
+    // Placeholder per-zone data - once sensor registration and real telemetry
+    // exist, replace this with data pulled from a shared service. Built as a
+    // method (not a field initializer) because it seeds LiveMetrics per zone.
+    private Dictionary<string, ZoneSnapshot> BuildZoneData() => new()
+    {
+        [""] = new ZoneSnapshot(
             new[]
             {
                 new TempSeries("Offices (Zone A)", "#35d0b8", new[] { 21.2, 21.0, 21.4, 22.1, 22.8, 23.0, 22.5, 21.8 }),
@@ -274,46 +335,55 @@
             },
             new[] { "Floor 4", "Floor 3", "Floor 2", "Floor 1" },
             new[] { 230.0, 340.0, 260.0, 410.0 },
-            _sensorStatusesByZone.Values.SelectMany(s => s).ToArray()),
+            _sensorStatusesByZone.Values.SelectMany(s => s).ToArray(),
+            SeedMetrics(1240)),
 
-        ["Occupied Spaces"] = new ZoneSnapshot(96, 100, 22.9, 1, 340,
+        ["Occupied Spaces"] = new ZoneSnapshot(
             new[] { new TempSeries("Occupied Spaces", "#35d0b8", new[] { 21.8, 21.5, 22.0, 22.9, 23.4, 23.6, 23.1, 22.3 }) },
             new[] { "Open Offices", "Private Offices", "Exec Suites", "Meeting Rooms" },
             new[] { 140.0, 90.0, 60.0, 50.0 },
-            _sensorStatusesByZone["Occupied Spaces"]),
+            _sensorStatusesByZone["Occupied Spaces"],
+            SeedMetrics(340)),
 
-        ["Amenities and Public Areas"] = new ZoneSnapshot(54, 60, 21.6, 0, 210,
+        ["Amenities and Public Areas"] = new ZoneSnapshot(
             new[] { new TempSeries("Amenities and Public Areas", "#35d0b8", new[] { 21.0, 20.8, 21.2, 21.9, 22.4, 22.6, 22.1, 21.4 }) },
             new[] { "Main Lobby", "Lift Lobby", "Corridor", "Restrooms", "Cafeteria", "Gym" },
             new[] { 60.0, 20.0, 15.0, 25.0, 55.0, 35.0 },
-            _sensorStatusesByZone["Amenities and Public Areas"]),
+            _sensorStatusesByZone["Amenities and Public Areas"],
+            SeedMetrics(210)),
 
-        ["Technical and Utility"] = new ZoneSnapshot(88, 92, 19.8, 2, 480,
+        ["Technical and Utility"] = new ZoneSnapshot(
             new[] { new TempSeries("Technical and Utility", "#f5a623", new[] { 19.5, 19.3, 19.6, 20.1, 20.4, 20.6, 20.2, 19.8 }) },
             new[] { "Server Rooms", "Electrical Rooms", "HVAC Plant" },
             new[] { 310.0, 90.0, 80.0 },
-            _sensorStatusesByZone["Technical and Utility"]),
+            _sensorStatusesByZone["Technical and Utility"],
+            SeedMetrics(480)),
 
-        ["Facilities and Logistics"] = new ZoneSnapshot(40, 44, 20.9, 0, 95,
+        ["Facilities and Logistics"] = new ZoneSnapshot(
             new[] { new TempSeries("Facilities and Logistics", "#35d0b8", new[] { 20.2, 20.0, 20.4, 21.1, 21.6, 21.8, 21.3, 20.6 }) },
             new[] { "Loading Docks", "Janitorial", "Waste/Storage" },
             new[] { 50.0, 20.0, 25.0 },
-            _sensorStatusesByZone["Facilities and Logistics"]),
+            _sensorStatusesByZone["Facilities and Logistics"],
+            SeedMetrics(95)),
 
-        ["Structural and Safety"] = new ZoneSnapshot(30, 32, 21.1, 0, 60,
+        ["Structural and Safety"] = new ZoneSnapshot(
             new[] { new TempSeries("Structural and Safety", "#35d0b8", new[] { 20.9, 20.7, 21.0, 21.4, 21.7, 21.9, 21.5, 21.0 }) },
             new[] { "Stairwells", "Lift Shafts", "Fire Command" },
             new[] { 20.0, 15.0, 25.0 },
-            _sensorStatusesByZone["Structural and Safety"]),
+            _sensorStatusesByZone["Structural and Safety"],
+            SeedMetrics(60)),
 
-        ["Exterior and Perimeter"] = new ZoneSnapshot(20, 22, 20.0, 0, 55,
+        ["Exterior and Perimeter"] = new ZoneSnapshot(
             new[] { new TempSeries("Exterior and Perimeter", "#ff6b6b", new[] { 19.0, 18.5, 19.8, 21.5, 22.8, 23.0, 21.2, 19.5 }) },
             new[] { "Parking Garage", "Rooftop", "Main Entrance" },
             new[] { 25.0, 10.0, 20.0 },
-            _sensorStatusesByZone["Exterior and Perimeter"]),
+            _sensorStatusesByZone["Exterior and Perimeter"],
+            SeedMetrics(55)),
     };
 
     private string _selectedZone = "";
+    
+    private Dictionary<string, ZoneSnapshot> _zoneData = new();
 
     private ZoneSnapshot CurrentSnapshot => _zoneData[_selectedZone];
 
@@ -333,51 +403,37 @@
         _ => "Online",
     };
 
-    // Placeholder: derives a plausible reading for each of the 5 registration
-    // category groups from the zone's existing headline numbers (temperature,
-    // energy, sensor count, open alerts). Once real telemetry exists, replace
-    // this with actual per-category aggregates computed from live sensor
-    // readings instead of derived-from-other-numbers estimates.
+    // Reads each zone's live-simulated Metrics. Peak sub-meter and air
+    // quality are still derived (from EnergyData / Co2 respectively), since
+    // those are genuinely computed-from-other-readings values in real life too.
     private static MetricGroup[] BuildMetricGroups(ZoneSnapshot zone)
     {
-        var humidity = Math.Clamp(40 + (zone.AvgTemperature - 18) * 1.5, 30, 65);
-        var co2 = Math.Clamp(450 + zone.SensorsOnline * 0.8, 400, 1200);
-        var airQuality = co2 < 700 ? "Good" : co2 < 1000 ? "Moderate" : "Poor";
-        var light = Math.Clamp(300 + zone.EnergyTodayKwh * 0.3, 150, 900);
-
-        var motionEvents = (int)Math.Round(zone.SensorsOnline * 0.3);
-        var presenceRooms = (int)Math.Round(zone.SensorsOnline / 4.0);
-        var peopleCount = (int)Math.Round(zone.SensorsOnline * 0.7);
-
-        var powerNow = zone.EnergyTodayKwh / 24;
-        var waterUsage = zone.EnergyTodayKwh * 0.01;
+        var m = zone.Metrics;
+        var airQuality = m.Co2 < 700 ? "Good" : m.Co2 < 1000 ? "Moderate" : "Poor";
         var peakIndex = zone.EnergyData.Length > 0
             ? Array.IndexOf(zone.EnergyData, zone.EnergyData.Max())
             : -1;
         var peakArea = peakIndex >= 0 ? zone.EnergyLabels[peakIndex] : "—";
 
-        var vibration = 0.01 + zone.OpenAlerts * 0.02;
-        var pipePressure = 4.0 + (zone.AvgTemperature - 20) * 0.05;
-
         return new[]
         {
             new MetricGroup("Environmental", new[]
             {
-                new MetricValue("Humidity", $"{humidity:0}%"),
-                new MetricValue("CO2", $"{co2:0} ppm"),
+                new MetricValue("Humidity", $"{m.Humidity:0}%"),
+                new MetricValue("CO2", $"{m.Co2:0} ppm"),
                 new MetricValue("Air quality", airQuality),
-                new MetricValue("Light level", $"{light:0} lux"),
+                new MetricValue("Light level", $"{m.LightLevel:0} lux"),
             }),
             new MetricGroup("Occupancy and Motion", new[]
             {
-                new MetricValue("Motion events today", $"{motionEvents}"),
-                new MetricValue("Rooms with presence", $"{presenceRooms}"),
-                new MetricValue("People count", $"{peopleCount}"),
+                new MetricValue("Motion events today", $"{m.MotionEventsToday}"),
+                new MetricValue("Rooms with presence", $"{m.RoomsWithPresence}"),
+                new MetricValue("People count", $"{m.PeopleCount}"),
             }),
             new MetricGroup("Energy and Power Consumption", new[]
             {
-                new MetricValue("Power draw now", $"{powerNow:0.0} kW"),
-                new MetricValue("Water usage today", $"{waterUsage:0.0} kL"),
+                new MetricValue("Power draw now", $"{m.PowerDrawNow:0.0} kW"),
+                new MetricValue("Water usage today", $"{m.WaterUsageTodayKwh:0.0} kL"),
                 new MetricValue("Peak sub-meter", peakArea),
             }),
             new MetricGroup("Safety and Security", new[]
@@ -386,8 +442,8 @@
             }),
             new MetricGroup("Structural and Facility", new[]
             {
-                new MetricValue("Vibration", $"{vibration:0.00} g"),
-                new MetricValue("Pipe pressure", $"{pipePressure:0.0} bar"),
+                new MetricValue("Vibration", $"{m.Vibration:0.00} g"),
+                new MetricValue("Pipe pressure", $"{m.PipePressure:0.0} bar"),
             }),
         };
     }
@@ -397,12 +453,129 @@
         await RenderChartsAsync();
     }
 
+    protected override void OnInitialized()
+    {
+        _zoneData = BuildZoneData();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await RenderChartsAsync();
+            _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+            _ = RunLiveUpdatesAsync();
         }
+    }
+
+    private readonly Random _random = new();
+    private PeriodicTimer? _liveTimer;
+
+    private double Walk(double current, double step, double min, double max) =>
+        Math.Round(Math.Clamp(current + (_random.NextDouble() * 2 - 1) * step, min, max), 2);
+
+    private int MaybeJump(int current, double probability, int min, int max)
+    {
+        if (_random.NextDouble() < probability)
+        {
+            current = Math.Clamp(current + _random.Next(-1, 2), min, max);
+        }
+        return current;
+    }
+
+    private double Accumulate(double current, double ratePerTick) =>
+        Math.Round(current + ratePerTick * (0.5 + _random.NextDouble()), 2);
+
+    private async Task RunLiveUpdatesAsync()
+    {
+        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
+        {
+            // Continuous + cumulative signals: every zone drifts independently,
+            // including the "All zones" overview (it has its own seeded metrics,
+            // not a sum of the others).
+            foreach (var zone in _zoneData.Values)
+            {
+                NudgeContinuousAndCumulative(zone);
+            }
+
+            // Event-driven sensor status flips: only the 6 real zones, never the
+            // "" aggregate - its SubZoneStatuses array holds the SAME sensor
+            // objects as the real zones (built via SelectMany), so nudging both
+            // would flip each sensor twice per tick and double-fire alerts.
+            foreach (var (zoneName, subZones) in _sensorStatusesByZone)
+            {
+                NudgeSensorStatuses(zoneName, subZones);
+            }
+
+            await InvokeAsync(StateHasChanged);
+            await RenderChartsAsync();
+        }
+    }
+
+    private void NudgeContinuousAndCumulative(ZoneSnapshot zone)
+    {
+        foreach (var series in zone.TempSeries)
+        {
+            series.Data[^1] = Walk(series.Data[^1], 0.3, 16, 30);
+        }
+
+        for (var i = 0; i < zone.EnergyData.Length; i++)
+        {
+            zone.EnergyData[i] = Math.Max(0, Walk(zone.EnergyData[i], 4, 0, 1000));
+        }
+
+        var m = zone.Metrics;
+        m.Humidity = Walk(m.Humidity, 0.6, 30, 70);
+        m.Co2 = Walk(m.Co2, 8, 400, 1400);
+        m.LightLevel = Walk(m.LightLevel, 12, 100, 900);
+        m.Vibration = Walk(m.Vibration, 0.005, 0, 0.3);
+        m.PipePressure = Walk(m.PipePressure, 0.05, 2, 6);
+        m.PowerDrawNow = Walk(m.PowerDrawNow, 0.3, 0.2, 25);
+
+        m.MotionEventsToday += _random.NextDouble() < 0.4 ? 1 : 0; // only ever increases
+        m.RoomsWithPresence = MaybeJump(m.RoomsWithPresence, 0.1, 0, Math.Max(zone.SensorsTotal, 1));
+        m.PeopleCount = MaybeJump(m.PeopleCount, 0.15, 0, 500);
+
+        m.EnergyTodayKwh = Accumulate(m.EnergyTodayKwh, m.PowerDrawNow / 720); // kWh added this 5s tick
+        m.WaterUsageTodayKwh = Accumulate(m.WaterUsageTodayKwh, 0.02);
+    }
+
+    private void NudgeSensorStatuses(string zoneName, SubZoneStatus[] subZones)
+    {
+        foreach (var group in subZones)
+        {
+            foreach (var sensor in group.Sensors)
+            {
+                var previous = sensor.Severity;
+                var roll = _random.NextDouble();
+
+                sensor.Severity = previous switch
+                {
+                    "critical" => roll < 0.20 ? "warn" : "critical",                // occasionally starts recovering
+                    "warn" => roll < 0.15 ? "critical" : roll < 0.35 ? "" : "warn", // can worsen, recover, or persist
+                    _ => roll < 0.005 ? "warn" : "",                                // rare fresh fault
+                };
+
+                if (sensor.Severity != previous && sensor.Severity is "warn" or "critical")
+                {
+                    RecentAlerts.Insert(0, new AlertItem(
+                        sensor.Severity,
+                        $"{sensor.Category} {(sensor.Severity == "critical" ? "offline" : "reading out of range")}",
+                        $"{zoneName}, {group.SubZoneName} · {sensor.ShortId}",
+                        "Just now"));
+
+                    if (RecentAlerts.Count > 20)
+                    {
+                        RecentAlerts.RemoveAt(RecentAlerts.Count - 1);
+                    }
+                }
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _liveTimer?.Dispose();
     }
 
     private async Task RenderChartsAsync()

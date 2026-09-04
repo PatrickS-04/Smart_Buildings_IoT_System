@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "iwJx+6fBaCk=",
+  "dgSpecHash": "edIC9sseSg4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\patri\\Downloads\\PROG7312_POE\\PROG7312_POE\\PROG7312_POE.csproj",
+  "projectFilePath": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE\\PROG7312_POE.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\patri\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.11\\microsoft.aspnetcore.app.internal.assets.10.0.11.nupkg.sha512",
     "C:\\Users\\patri\\.nuget\\packages\\microsoft.aspnetcore.authorization\\10.0.11\\microsoft.aspnetcore.authorization.10.0.11.nupkg.sha512",
