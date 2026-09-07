@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "PROG7312_POE",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-dC4JORb0/d45OafwXt3zThMmmTE5HiDUoD64Eq4n7HY=",
+    "hash": "sha256-7QQvk2TI9Q/NQY5x8gmMiIc+VyDhNxaYRcYuD5MUDX4=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.vzj2a6aakt.js"
@@ -1242,16 +1242,16 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "PROG7312_POE.wasm",
-        "name": "PROG7312_POE.srybd4nt6z.wasm",
-        "hash": "sha256-OA5WyEU/lIuA9yxiSY0uwsov7BRKCXjjnLyCpDXHLdo=",
+        "name": "PROG7312_POE.bm8j8wrvif.wasm",
+        "hash": "sha256-Y6qNoDaRh19Zz52F6E8z5DIFhswqT79RRpWPPJvfr5g=",
         "cache": "force-cache"
       }
     ],
     "pdb": [
       {
         "virtualPath": "PROG7312_POE.pdb",
-        "name": "PROG7312_POE.w8u1maj5p4.pdb",
-        "hash": "sha256-oALiFWbJRnnR5/W0ik23TSKwMgcpelTQCJb6RZv0TFY=",
+        "name": "PROG7312_POE.pps7pkqpxy.pdb",
+        "hash": "sha256-4wkAwoXgKUO5EPLCeyo/j5J8y2CusmLcDib9vBHxEoM=",
         "cache": "force-cache"
       }
     ],
