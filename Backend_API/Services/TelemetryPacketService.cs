@@ -1,0 +1,47 @@
+﻿using PROG7312_POE.Shared.Models;
+
+namespace Backend_API.Services
+{
+    public class TelemetryPacketService
+    {
+        private const int MaxReadingsPerDevice = 750;
+
+        private readonly Dictionary<string, List<ITelemetryPacketModel>> _deviceReadings = new();
+        private readonly Lock _lock = new();
+
+        public void AddTelemetryPacket(ITelemetryPacketModel telemetryPacket)
+        {
+            lock (_lock)
+            {
+                if (!_deviceReadings.TryGetValue(telemetryPacket.DeviceMacAddress, out var list))
+                {
+                    list = new List<ITelemetryPacketModel>();
+                    _deviceReadings[telemetryPacket.DeviceMacAddress] = list;
+                }
+
+                list.Add(telemetryPacket);
+
+                if (list.Count > MaxReadingsPerDevice)
+                {
+                    list.RemoveAt(0);
+                }
+            }
+        }
+
+        public IReadOnlyList<ITelemetryPacketModel> GetTelemetryPacketByDevice(string deviceMacAddress)
+        {
+            lock (_lock)
+            {
+                return _deviceReadings.TryGetValue(deviceMacAddress, out var list) ? list.ToList() : new List<ITelemetryPacketModel>();
+            }
+        }
+
+        public IReadOnlyList<ITelemetryPacketModel> GetAllDevices()
+        {
+            lock (_lock)
+            {
+                return _deviceReadings.Values.SelectMany(list => list).ToList();
+            }
+        }
+    }
+}

@@ -1,12 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\sensorregistrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\sensorregistrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -14,7 +9,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -35,19 +30,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SensorRegistrationService.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\SensorRegistrationService.cs",
-              "RelativeDocumentMoniker": "Backend_API\\Services\\SensorRegistrationService.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\SensorRegistrationService.cs",
-              "RelativeToolTip": "Backend_API\\Services\\SensorRegistrationService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-08T11:22:53.552Z",
-              "EditorCaption": ""
             }
           ]
         },

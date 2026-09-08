@@ -1,7 +1,14 @@
+using Backend_API.Services;
+using PROG7312_POE.Shared.DTOs;
+using PROG7312_POE.Shared.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton<SensorRegistrationService>();
+builder.Services.AddSingleton<TelemetryPacketService>();
 
 builder.Services.AddCors(options =>
 {

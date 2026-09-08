@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe.shared\\dtos\\sensorregistrationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|solutionrelative:prog7312_poe.shared\\dtos\\sensorregistrationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe.shared\\models\\powerreading.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|solutionrelative:prog7312_poe.shared\\models\\powerreading.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\telemetrypacketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\telemetrypacketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe.shared\\models\\telemetrypacketmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|solutionrelative:prog7312_poe.shared\\models\\telemetrypacketmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\sensorregistrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\sensorregistrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,8 +22,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 0,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Program.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Program.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Program.cs*",
+              "RelativeToolTip": "Backend_API\\Program.cs*",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAAAAoAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-08T12:12:34.746Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
@@ -46,40 +59,28 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SensorRegistrationDto.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\DTOs\\SensorRegistrationDto.cs",
-              "RelativeDocumentMoniker": "PROG7312_POE.Shared\\DTOs\\SensorRegistrationDto.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\DTOs\\SensorRegistrationDto.cs*",
-              "RelativeToolTip": "PROG7312_POE.Shared\\DTOs\\SensorRegistrationDto.cs*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAA/AAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "TelemetryPacketService.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\TelemetryPacketService.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Services\\TelemetryPacketService.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\TelemetryPacketService.cs*",
+              "RelativeToolTip": "Backend_API\\Services\\TelemetryPacketService.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-08T11:05:35.579Z",
+              "WhenOpened": "2026-09-08T11:46:42.743Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "TelemetryPacketModel.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\TelemetryPacketModel.cs",
-              "RelativeDocumentMoniker": "PROG7312_POE.Shared\\Models\\TelemetryPacketModel.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\TelemetryPacketModel.cs",
-              "RelativeToolTip": "PROG7312_POE.Shared\\Models\\TelemetryPacketModel.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAApAAAAAAAAAA==",
+              "Title": "SensorRegistrationService.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\SensorRegistrationService.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Services\\SensorRegistrationService.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\SensorRegistrationService.cs*",
+              "RelativeToolTip": "Backend_API\\Services\\SensorRegistrationService.cs*",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAuwBgAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-07T20:27:02.828Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PowerReading.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\PowerReading.cs",
-              "RelativeDocumentMoniker": "PROG7312_POE.Shared\\Models\\PowerReading.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\PowerReading.cs",
-              "RelativeToolTip": "PROG7312_POE.Shared\\Models\\PowerReading.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAuwBgAAAA6AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-07T19:50:16.179Z",
+              "WhenOpened": "2026-09-08T11:22:53.552Z",
               "EditorCaption": ""
             }
           ]
