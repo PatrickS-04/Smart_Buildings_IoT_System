@@ -1,3 +1,4 @@
+using Backend_API.Endpoints;
 using Backend_API.Services;
 using PROG7312_POE.Shared.DTOs;
 using PROG7312_POE.Shared.Models;
@@ -33,5 +34,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowClient");
+
+app.MapSensorEndpoints();
+app.MapTelemetryPacketEndpoints();
 
 app.Run();
