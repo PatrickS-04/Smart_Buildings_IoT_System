@@ -23,6 +23,21 @@
     color: var(--text-muted);
 }
 
+.submit-error[b-ohyyrmz76b] {
+    color: var(status--critical);
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+}
+
+.submit-registration:disabled[b-ohyyrmz76b] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .form-grid[b-ohyyrmz76b] {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
