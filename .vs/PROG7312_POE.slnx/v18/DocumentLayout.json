@@ -3,20 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\endpoints\\sensorendpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\endpoints\\sensorendpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\endpoints\\telemetrybatchendpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\endpoints\\telemetrybatchendpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\buildingconfigurationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\buildingconfigurationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\rawtelemetrybatchservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\rawtelemetrybatchservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe.shared\\validation\\treevalidatorfordeployment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|solutionrelative:prog7312_poe.shared\\validation\\treevalidatorfordeployment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe.shared\\models\\configurenode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88789CEC-CCB4-4EC7-B5AB-52F02CBC5642}|PROG7312_POE.Shared\\PROG7312_POE.Shared.csproj|solutionrelative:prog7312_poe.shared\\models\\configurenode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\backend_api\\services\\rawtelemetrybatchbuffer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89B46332-46BF-49A2-87EE-AE3B6472F567}|Backend_API\\Backend_API.csproj|solutionrelative:backend_api\\services\\rawtelemetrybatchbuffer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -51,54 +47,39 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "SensorEndpoints.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Endpoints\\SensorEndpoints.cs",
-              "RelativeDocumentMoniker": "Backend_API\\Endpoints\\SensorEndpoints.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Endpoints\\SensorEndpoints.cs",
-              "RelativeToolTip": "Backend_API\\Endpoints\\SensorEndpoints.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAABeAAAAAAAAAA==",
+              "Title": "TelemetryBatchEndpoints.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Endpoints\\TelemetryBatchEndpoints.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Endpoints\\TelemetryBatchEndpoints.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Endpoints\\TelemetryBatchEndpoints.cs",
+              "RelativeToolTip": "Backend_API\\Endpoints\\TelemetryBatchEndpoints.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-09T08:06:03.289Z",
+              "WhenOpened": "2026-09-09T09:46:05.89Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "BuildingConfigurationService.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\BuildingConfigurationService.cs",
-              "RelativeDocumentMoniker": "Backend_API\\Services\\BuildingConfigurationService.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\BuildingConfigurationService.cs",
-              "RelativeToolTip": "Backend_API\\Services\\BuildingConfigurationService.cs",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAAADIAAABdAAAAAAAAAA==",
+              "Title": "RawTelemetryBatchService.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\RawTelemetryBatchService.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Services\\RawTelemetryBatchService.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\RawTelemetryBatchService.cs",
+              "RelativeToolTip": "Backend_API\\Services\\RawTelemetryBatchService.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAAADAAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-09T07:42:21.942Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-09T08:54:37.431Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "TreeValidatorForDeployment.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Validation\\TreeValidatorForDeployment.cs",
-              "RelativeDocumentMoniker": "PROG7312_POE.Shared\\Validation\\TreeValidatorForDeployment.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Validation\\TreeValidatorForDeployment.cs",
-              "RelativeToolTip": "PROG7312_POE.Shared\\Validation\\TreeValidatorForDeployment.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
+              "Title": "RawTelemetryBatchBuffer.cs",
+              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\RawTelemetryBatchBuffer.cs",
+              "RelativeDocumentMoniker": "Backend_API\\Services\\RawTelemetryBatchBuffer.cs",
+              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\Backend_API\\Services\\RawTelemetryBatchBuffer.cs",
+              "RelativeToolTip": "Backend_API\\Services\\RawTelemetryBatchBuffer.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAAACcAAABBAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-09T07:26:28.633Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ConfigureNode.cs",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\ConfigureNode.cs",
-              "RelativeDocumentMoniker": "PROG7312_POE.Shared\\Models\\ConfigureNode.cs",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE.Shared\\Models\\ConfigureNode.cs",
-              "RelativeToolTip": "PROG7312_POE.Shared\\Models\\ConfigureNode.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAaAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-09T07:20:07.7Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-09T08:33:46.702Z"
             }
           ]
         },

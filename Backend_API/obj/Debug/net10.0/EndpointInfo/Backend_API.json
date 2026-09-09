@@ -132,10 +132,94 @@
           }
         }
       }
+    },
+    "/api/telemetry/batch/{deviceMacAddress}/{metricName}": {
+      "post": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BufferReadingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/telemetry/batch/{deviceMacAddress}/{metricName}/send": {
+      "post": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BufferReadingRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "SensorRegistrationDto": {
         "type": "object",
         "properties": {
