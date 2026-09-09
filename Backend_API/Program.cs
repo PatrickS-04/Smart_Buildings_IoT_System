@@ -10,6 +10,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<SensorRegistrationService>();
 builder.Services.AddSingleton<TelemetryPacketService>();
+builder.Services.AddSingleton<BuildingConfigurationService>();
 
 builder.Services.AddCors(options =>
 {

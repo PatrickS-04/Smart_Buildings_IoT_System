@@ -4,6 +4,214 @@
     "title": "Backend_API",
     "version": "1.0"
   },
-  "paths": { },
-  "components": { }
+  "paths": {
+    "/api/sensors": {
+      "post": {
+        "tags": [
+          "Backend_API"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensorRegistrationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Backend_API"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/sensors/{deviceMacAddress}": {
+      "get": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/telemetrypacket": {
+      "post": {
+        "tags": [
+          "Backend_API"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetryIngestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Backend_API"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/telemetrypacket/{deviceMacAddress}": {
+      "get": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SensorRegistrationDto": {
+        "type": "object",
+        "properties": {
+          "deviceMacAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "mainZone": {
+            "type": "string",
+            "nullable": true
+          },
+          "subZone": {
+            "type": "string",
+            "nullable": true
+          },
+          "floor": {
+            "type": "string",
+            "nullable": true
+          },
+          "roomOrArea": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "sensorType": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelemetryIngestionRequest": {
+        "type": "object",
+        "properties": {
+          "deviceMacAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "metricName": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "telemetryValue": {
+            "$ref": "#/components/schemas/TelemetryValue"
+          },
+          "numericValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "boolValue": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelemetryValue": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Backend_API"
+    }
+  ]
 }

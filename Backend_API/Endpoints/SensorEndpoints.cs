@@ -9,11 +9,19 @@ namespace Backend_API.Endpoints
         {
             var group = application.MapGroup("api/sensors");
 
-            group.MapPost("/", (SensorRegistrationDto sensor, SensorRegistrationService sensorService) =>
+            group.MapPost("/", (SensorRegistrationDto sensor, SensorRegistrationService sensorService, BuildingConfigurationService buildingConfigService) =>
             {
                 if (string.IsNullOrWhiteSpace(sensor.DeviceMacAddress))
                 {
                     return Results.BadRequest(new { error = "Device Mac Address is required" });
+                }
+
+                if (!buildingConfigService.IsDeploymentValid(sensor.MainZone, sensor.SubZone))
+                {
+                    return Results.BadRequest(new
+                    {
+                        error = $"{sensor.SubZone} is not a valid Sub-Zone under {sensor.MainZone}"
+                    });
                 }
 
                 var registeredSensor = sensorService.RegisterSensor(sensor);
@@ -22,7 +30,7 @@ namespace Backend_API.Endpoints
 
             group.MapGet("/", (SensorRegistrationService sensorService) =>
             {
-                Results.Ok(sensorService.GetAllSensors());
+                return Results.Ok(sensorService.GetAllSensors());
             });
 
             group.MapGet("/{deviceMacAddress}", (string deviceMacAddress, SensorRegistrationService sensorService) =>
