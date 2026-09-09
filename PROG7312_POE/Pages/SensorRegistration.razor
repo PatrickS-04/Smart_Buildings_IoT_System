@@ -1,5 +1,7 @@
 ﻿@page "/sensorregistration"
 @using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Headers
+@inject HttpClient Http
 
 <PageTitle>Sensor Registration</PageTitle>
 
@@ -8,6 +10,11 @@
 
     <section class="register-sensor-form">
         <h2>Register a Sensor</h2>
+
+        @if (!string.IsNullOrEmpty(_submitError))
+        {
+            <p class="submit-error">@_submitError</p>
+        }
 
         <EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator/>
@@ -99,16 +106,21 @@
                     </ul>
                 }
             </div>
-            <button type="submit" class="btn btn-primary submit-registration">Register Sensor</button>
+            <button type="submit" class="btn btn-primary submit-registration" disabled="@_isSubmitting">
+                @(_isSubmitting ? "Registering..." : "Register Sensor")</button>
         </EditForm>
     </section>
 
     <section class="registered-sensors-list">
         <h2>Registered Sensors <span class="registered-sensor-count">(@_registeredSensors.Count)</span></h2>
 
-        @if (_registeredSensors.Count == 0)
+        @if (_isLoading)
         {
-            <p class="empty-state">No Sensors are registered yet. Add a Sensor by using the form above.</p>
+            <p class="empty-state">Loading Registered Sensors...</p>
+        }
+        else if (_registeredSensors.Count == 0)
+        {
+            <p class="empty-state">No sensors are registered yet. Add a Sensor by using the form above.</p>
         }
         else
         {
@@ -117,11 +129,11 @@
                 {
                     <li class="sensor-card">
                         <div class="sensor-card-header">
-                            <span class="device-id">@sensor.DeviceMacAddress</span>
-                            <span class="category-badge @CategoryCssClass(sensor.Category)">@sensor.Category</span>
+                            <span class="device-id">@sensor.Sensor.DeviceMacAddress</span>
+                            <span class="category-badge @CategoryCssClass(sensor.Sensor.Category)">@sensor.Sensor.Category</span>
                         </div>
-                        <p class="sensor-type">@sensor.SensorType</p>
-                        <p class="sensor-location">@sensor.MainZone: @sensor.SubZone — @LocationLabel(sensor)</p>
+                        <p class="sensor-type">@sensor.Sensor.SensorType</p>
+                        <p class="sensor-location">@sensor.Sensor.MainZone: @sensor.Sensor.SubZone — @LocationLabel(sensor.Sensor)</p>
                         @if (sensor.attachments.Count > 0)
                         {
                             <ul class="attachment-list">
@@ -135,7 +147,7 @@
                         {
                             <p class="no-attachments">No files attached</p>
                         }
-                        <button type="button" class="remove-btn" @onclick="() => RemoveSensor(sensor)">Remove</button>
+                        <button type="button" class="remove-btn" @onclick="() => RemoveSensor(sensor.Sensor.DeviceMacAddress)">Remove</button>
                     </li>
                 }
             </ul>
@@ -181,30 +193,128 @@
     private string[] CurrentSubZones =>
         string.IsNullOrEmpty(_model.MainZone) ? Array.Empty<string>() : SubZones.GetValueOrDefault(_model.MainZone, Array.Empty<string>());
 
-    private record AttachedFile(string Name, long SizeBytes);
-    private record RegisteredSensor(string DeviceMacAddress, string MainZone, string SubZone, string Floor, string RoomOrArea, string Category, string SensorType, List<AttachedFile> attachments);
+    private class DisplayOfSensor
+    {
+        public SensorRegistrationDto Sensor { get; set; } = new();
+        public List<AttachmentsForSensorsDto> Attachments { get; set; } = new();
+    }
 
     private SensorRegistrationModel _model = new();
     private List<IBrowserFile> _pendingFiles = new();
     private Guid _fileInputKey = Guid.NewGuid();
-    private readonly List<RegisteredSensor> _registeredSensors = new();
+    private readonly List<DisplayOfSensor> _registeredSensors = new();
 
-    private void HandleValidSubmit()
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _submitError;
+
+    protected override async Task OnInitializedAsync()
     {
-        var attachments = _pendingFiles
-            .Select(file => new AttachedFile(file.Name, file.Size)).ToList();
-
-        _registeredSensors.Insert(0, new RegisteredSensor(
-            _model.DeviceMacAddress, _model.MainZone, _model.SubZone, _model.Floor, _model.RoomOrArea, _model.Category, _model.SensorType, attachments));
-
-        _model = new SensorRegistrationModel();
-        _pendingFiles = new();
-        _fileInputKey = Guid.NewGuid();
+        await LoadSensorsAsync();
     }
 
-    private void RemoveSensor(RegisteredSensor sensor)
+    private async Task LoadSensorsAsync()
     {
-        _registeredSensors.Remove(sensor);
+        _isLoading = true;
+        try
+        {
+            var sensors = await Http.GetFromJsonAsync<List<SensorRegistrationDto>>("/api/sensors") ?? new();
+            _registeredSensors.Clear();
+
+            foreach (var sensor in sensors)
+            {
+                var sensorAttachments = await Http.GetFromJsonAsync<List<AttachmentsForSensorsDto>>($"/api/sensors/{sensor.deviceMacAddress}/attachments") ?? new();
+                _registeredSensors.Add(new DisplayOfSensor { Sensor = sensor, Attachments = sensorAttachments });
+            }
+        }
+        catch (Exception exception)
+        {
+            _submitError = $"Could not load Registered Sensors: {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _submitError = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var sensorRegistrationDto = new SensorRegistrationDto
+            {
+                DeviceMacAddress = _model.DeviceMacAddress,
+                MainZone = _model.MainZone,
+                SubZone = _model.SubZone,
+                Floor = _model.Floor,
+                RoomOrArea = _model.RoomOrArea,
+                Category = _model.Category,
+                SensorType = _model.SensorType
+            };
+
+            var response = await Http.PostAsJsonAsync("/api/sensors", sensorRegistrationDto);
+
+            if (!response.IsSuccessfulStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                _submitError = error?.Error ?? $"Registration failed ({(int)response.StatusCode})";
+                return;
+            }
+
+            if (_pendingFiles.Count > 0)
+            {
+                await UploadAttachmentsAsync(sensorRegistrationDto.DeviceMacAddress);
+            }
+
+            await LoadSensorsAsync();
+
+            _model = new SensorRegistrationModel();
+            _fileInputKey = Guid.NewGuid();
+            _pendingFiles = new();
+        }
+        catch (Exception exception)
+        {
+            _submitError = $"Registration failed: {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task UploadAttachmentsAsync(string deviceMacAddress)
+    {
+        using var content = new MultipartFormDataContent();
+
+        foreach (var file in _pendingFiles)
+        {
+            var fileStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            var fileStreamContent = new StreamContent(fileStream);
+            fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType);
+
+            content.Add(fileStreamContent, "files", file.Name);
+        }
+
+        var response = await Http.PostAsync($"/api/sensors/{deviceMacAddress}/attachments", content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _submitError = "Sensor was registered but attaching files failed. You can try attaching them later";
+        }
+    }
+
+    private async Task RemoveSensor(string deviceMacAddress)
+    {
+        var response = await Http.DeleteAsync($"/api/sensors/{deviceMacAddress}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            _registeredSensors.RemoveAll(sensor => sensor.Sensor.DeviceMacAddress == deviceMacAddress);
+        }
     }
 
     private static string CategoryCssClass(string category) => category switch
@@ -217,7 +327,7 @@
         _ => ""
     };
 
-    private static string LocationLabel(RegisteredSensor sensor) =>
+    private static string LocationLabel(SensorRegistrationDto sensor) =>
         string.IsNullOrWhiteSpace(sensor.RoomOrArea)
             ? sensor.Floor
             : $"{sensor.Floor}, {sensor.RoomOrArea}";
@@ -252,6 +362,8 @@
         return $"{bytes / (1024.0 * 1024):0.#} MB";
     }
 
+    private record ErrorResponse(string Error);
+
     private class SensorRegistrationModel
     {
         [Required(ErrorMessage = "Device MAC Address or Unique Identifier is required")]
@@ -266,8 +378,6 @@
         [Required(ErrorMessage = "Floor is required")]
         public string Floor { get; set; } = string.Empty;
 
-        // Optional: some spaces (open-plan floors, parking levels, a single
-        // server room per floor) don't have a distinct room number.
         public string RoomOrArea { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Sensor Category is required")]
