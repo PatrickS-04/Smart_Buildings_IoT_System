@@ -82,6 +82,55 @@
     ]
   },
   {
+    "ContainingType": "Backend_API.Endpoints.SensorAttachmentEndpoints\u002B\u003C\u003Ec",
+    "Method": "\u003CMapSensorAttachmentEndpoints\u003Eb__0_0",
+    "RelativePath": "api/sensors/{deviceMacAddress}/attachments/",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "deviceMacAddress",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "attachedFiles",
+        "Type": "Microsoft.AspNetCore.Http.IFormFileCollection",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Backend_API.Endpoints.SensorAttachmentEndpoints\u002B\u003C\u003Ec",
+    "Method": "\u003CMapSensorAttachmentEndpoints\u003Eb__0_1",
+    "RelativePath": "api/sensors/{deviceMacAddress}/attachments/",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "deviceMacAddress",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "Backend_API.Endpoints.TelemetryBatchEndpoints\u002B\u003C\u003Ec",
     "Method": "\u003CMapTelemetryBatchEndpoints\u003Eb__0_0",
     "RelativePath": "api/telemetry/batch/{deviceMacAddress}/{metricName}",

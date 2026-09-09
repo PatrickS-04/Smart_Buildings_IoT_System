@@ -202,6 +202,74 @@
           }
         }
       }
+    },
+    "/api/sensors/{deviceMacAddress}/attachments": {
+      "post": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "attachedFiles"
+                ],
+                "type": "object",
+                "properties": {
+                  "attachedFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              },
+              "encoding": {
+                "attachedFiles": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Backend_API"
+        ],
+        "parameters": [
+          {
+            "name": "deviceMacAddress",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {

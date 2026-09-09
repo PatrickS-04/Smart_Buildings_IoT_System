@@ -12,6 +12,7 @@ builder.Services.AddSingleton<SensorRegistrationService>();
 builder.Services.AddSingleton<TelemetryPacketService>();
 builder.Services.AddSingleton<BuildingConfigurationService>();
 builder.Services.AddSingleton<RawTelemetryBatchService>();
+builder.Services.AddSingleton<AttachmentsForSensorsService>();
 
 builder.Services.AddCors(options =>
 {
@@ -40,5 +41,6 @@ app.UseCors("AllowClient");
 app.MapSensorEndpoints();
 app.MapTelemetryPacketEndpoints();
 app.MapTelemetryBatchEndpoints();
+app.MapSensorAttachmentEndpoints();
 
 app.Run();
