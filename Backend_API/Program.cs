@@ -13,6 +13,12 @@ builder.Services.AddSingleton<TelemetryPacketService>();
 builder.Services.AddSingleton<BuildingConfigurationService>();
 builder.Services.AddSingleton<RawTelemetryBatchService>();
 builder.Services.AddSingleton<AttachmentsForSensorsService>();
+builder.Services.AddHttpClient("TimerApi", httpClient =>
+{
+    httpClient.BaseAddress = new Uri("https://localhost:7194/");
+});
+
+builder.Services.AddHostedService<SimulatedTelemetryService>();
 
 builder.Services.AddCors(options =>
 {
