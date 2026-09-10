@@ -1,5 +1,27 @@
 [
   {
+    "ContainingType": "Backend_API.Endpoints.SensorDashboardEndpoints\u002B\u003C\u003Ec",
+    "Method": "\u003CMapSensorDashboardEndpoints\u003Eb__0_0",
+    "RelativePath": "api/dashboard",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sensorZone",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "Backend_API.Endpoints.SensorEndpoints\u002B\u003C\u003Ec",
     "Method": "\u003CMapSensorEndpoints\u003Eb__0_0",
     "RelativePath": "api/sensors/",

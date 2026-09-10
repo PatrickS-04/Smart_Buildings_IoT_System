@@ -13,6 +13,7 @@ builder.Services.AddSingleton<TelemetryPacketService>();
 builder.Services.AddSingleton<BuildingConfigurationService>();
 builder.Services.AddSingleton<RawTelemetryBatchService>();
 builder.Services.AddSingleton<AttachmentsForSensorsService>();
+builder.Services.AddSingleton<SensorDashboardAggregationService>();
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://localhost:7194/");
@@ -48,5 +49,6 @@ app.MapSensorEndpoints();
 app.MapTelemetryPacketEndpoints();
 app.MapTelemetryBatchEndpoints();
 app.MapSensorAttachmentEndpoints();
+app.MapSensorDashboardEndpoints();
 
 app.Run();
