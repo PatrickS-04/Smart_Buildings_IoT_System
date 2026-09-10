@@ -500,6 +500,20 @@ main[b-xk8t5wy6lc] {
     color: var(--text-muted);
 }
 
+.remove-pending-file[b-ohyyrmz76b] {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-left: 0.4rem;
+    padding: 0;
+}
+
+    .remove-pending-file:hover[b-ohyyrmz76b] {
+        color: var(--status-critical);
+    }
+
 .submit-error[b-ohyyrmz76b] {
     color: var(status--critical);
     background: rgba(255, 107, 107, 0.1);

@@ -31,10 +31,8 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\Microsoft.VisualBasic.oawltawhmj.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\Microsoft.Win32.Primitives.n6ylnc1rdo.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\Microsoft.Win32.Registry.205yp9wx9t.wasm
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.3uk1fcs8ak.pdb
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.Shared.kvt5d04dj7.pdb
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.Shared.qwube78n94.wasm
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.yhsbrakyn8.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.AppContext.33lgp2bflw.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Buffers.g7kq07we8q.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Collections.Concurrent.ayt23dc2he.wasm
@@ -201,7 +199,6 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.q2zv1ajo7g.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\WindowsBase.nd3r6urbkm.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\blazor.webassembly.w3qd1tpl0e.js
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.39vsi2d2t0.js
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.js.map
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.native.nxw7lo0lh5.wasm
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.native.vzj2a6aakt.js
@@ -266,7 +263,6 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.IO.u03kcd51u2.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.native.nxw7lo0lh5.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Diagnostics.DiagnosticSource.us3v4sw3re.wasm.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.39vsi2d2t0.js.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.IO.UnmanagedMemoryStream.jtjypz1bw3.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Xml.Linq.4w1i83kr6d.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Resources.ResourceManager.u0kj92um25.wasm.gz
@@ -365,10 +361,8 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.Shared.qwube78n94.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.IO.Compression.ZipFile.tmxcz8z1z1.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Threading.ThreadPool.4f7y4725hj.wasm.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.3uk1fcs8ak.pdb.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\Microsoft.DotNet.HotReload.WebAssembly.Browser.jiityjz7hu.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Web.sakoricpi1.wasm.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.yhsbrakyn8.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.runtime.zbexyp8zrs.js.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\Microsoft.Extensions.FileSystemGlobbing.qthbzihrxq.wasm.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\System.Xml.XmlSerializer.kyxgnik2yp.wasm.gz
@@ -913,8 +907,6 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\ft97gi44su-{0}-yqdn6ifuae-yqdn6ifuae.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\eot7yiqlr8-{0}-iag0ou56lh-iag0ou56lh.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\d3kw5bnkm8-{0}-w3qd1tpl0e-w3qd1tpl0e.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\o38shv7s9s-{0}-34i18wqr71-34i18wqr71.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\u4v4dnix0j-{0}-34i18wqr71-34i18wqr71.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\526pd68f34-{0}-286cdd0mnj-286cdd0mnj.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\l3eoxsum2a-{0}-o6y2k6vgc3-o6y2k6vgc3.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\59nn603pdc-{0}-b7y73c8sd4-b7y73c8sd4.gz
@@ -1124,10 +1116,6 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\ppf44tng5o-{0}-qwube78n94-qwube78n94.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\4rebnfflas-{0}-kvt5d04dj7-kvt5d04dj7.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\qn6u4771cw-{0}-jiityjz7hu-jiityjz7hu.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\rb90c21hby-{0}-yhsbrakyn8-yhsbrakyn8.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\qhnmsy92pv-{0}-3uk1fcs8ak-3uk1fcs8ak.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\9qza355nvl-{0}-39vsi2d2t0-39vsi2d2t0.gz
-C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\0m9h4y9aqm-{0}-isuhranz9q-isuhranz9q.gz
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\staticwebassets.development.json
@@ -1139,3 +1127,15 @@ C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\refint\PROG7312_POE.dll
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\PROG7312_POE.pdb
 C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\ref\PROG7312_POE.dll
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\o38shv7s9s-{0}-evvswlil0e-evvswlil0e.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\u4v4dnix0j-{0}-evvswlil0e-evvswlil0e.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.qhsk0otyz5.wasm
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.tz9fk9xh22.pdb
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.nwblf0ss9l.js
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\dotnet.nwblf0ss9l.js.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.tz9fk9xh22.pdb.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\bin\Debug\net10.0\wwwroot\_framework\PROG7312_POE.qhsk0otyz5.wasm.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\rb90c21hby-{0}-qhsk0otyz5-qhsk0otyz5.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\qhnmsy92pv-{0}-tz9fk9xh22-tz9fk9xh22.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\9qza355nvl-{0}-nwblf0ss9l-nwblf0ss9l.gz
+C:\Users\patri\OneDrive\Desktop\3rd Year Projects\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\PROG7312_POE\obj\Debug\net10.0\compressed\0m9h4y9aqm-{0}-rzj7e0aybf-rzj7e0aybf.gz

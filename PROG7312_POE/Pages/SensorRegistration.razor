@@ -203,7 +203,7 @@
     }
 
     private SensorRegistrationModel _model = new();
-    private List<IBrowserFile> _pendingFiles = new();
+    private List<PendingAttachment> _pendingFiles = new();
     private Guid _fileInputKey = Guid.NewGuid();
     private readonly List<DisplayOfSensor> _registeredSensors = new();
 
@@ -292,12 +292,11 @@
 
         foreach (var file in _pendingFiles)
         {
-            var fileStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            var fileStreamContent = new StreamContent(fileStream);
-            fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue(
+            var byteContent = new ByteArrayContent(file.Content);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue(
                 string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType);
 
-            content.Add(fileStreamContent, "files", file.Name);
+            content.Add(byteContent, "attachedFiles", file.Name);
         }
 
         var response = await Http.PostAsync($"/api/sensors/{deviceMacAddress}/attachments", content);
@@ -305,6 +304,20 @@
         if (!response.IsSuccessStatusCode)
         {
             _submitError = "Sensor was registered but attaching files failed. You can try attaching them later";
+        }
+    }
+
+    private async Task DeleteSensorAsync(string deviceMacAddress)
+    {
+        var response = await Http.DeleteAsync($"/api/sensors/{deviceMacAddress}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _submitError = "Failed to delete the sensor and its attachments";
+        }
+        else
+        {
+            await LoadSensorsAsync();
         }
     }
 
@@ -343,16 +356,39 @@
         _model.SensorType = string.Empty;
     }
 
-    private void OnFilesSelected(InputFileChangeEventArgs events)
+    private async Task OnFilesSelected(InputFileChangeEventArgs events)
     {
-        var newFiles = events.GetMultipleFiles(10);
-
-        foreach (var file in newFiles)
+        try
         {
-            if (!_pendingFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
+            var newFiles = events.GetMultipleFiles(10);
+
+            foreach (var file in newFiles)
             {
-                _pendingFiles.Add(file);
+                if (_pendingFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
+                {
+                    continue;
+                }
+
+                await using var fileStream = file.OpenReadStream(
+                    maxAllowedSize: 10 * 1024 * 1024);
+
+                using var memoryStream = new MemoryStream();
+
+                await fileStream.CopyToAsync(memoryStream);
+
+                _pendingFiles.Add(new PendingAttachment
+                {
+                    Name = file.Name,
+                    ContentType = string.IsNullOrEmpty(file.ContentType)
+                        ? "application/octet-stream" : file.ContentType,
+                    Size = file.Size,
+                    Content = memoryStream.ToArray()
+                });
             }
+        }
+        catch (Exception exception)
+        {
+            _submitError = $"Could not read selected files: {exception.Message}";
         }
     }
 
@@ -394,5 +430,13 @@
 
         [Required(ErrorMessage = "Sensor Type is required")]
         public string SensorType { get; set; } = string.Empty;
+    }
+
+    private class PendingAttachment
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public long Size { get; set; }
+        public byte[] Content { get; set; } = Array.Empty<byte>();
     }
 }

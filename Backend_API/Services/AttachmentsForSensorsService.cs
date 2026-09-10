@@ -87,5 +87,25 @@ namespace Backend_API.Services
                 return _attachmentsForSensors.TryGetValue(deviceMacAddress, out var list) ? list.ToList() : new List<AttachmentsForSensorsDto>();
             }
         }
+
+        public bool RemoveSensorAttachments(string deviceMacAddress)
+        {
+            var cleanedDeviceMacAddress = CleanDeviceMacAddress(deviceMacAddress);
+            string sensorAttachmentsFolderPath = Path.Combine(_rootPath, cleanedDeviceMacAddress);
+
+            bool isFilesDeleted = false;
+
+            if (Directory.Exists(sensorAttachmentsFolderPath))
+            {
+                Directory.Delete(sensorAttachmentsFolderPath, recursive: true);
+                isFilesDeleted = true;
+            }
+            
+            lock (_lock)
+            {
+                bool isMemoryCleared = _attachmentsForSensors.Remove(deviceMacAddress);
+                return isFilesDeleted || isMemoryCleared;
+            }
+        }
     }
 }

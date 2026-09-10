@@ -39,8 +39,10 @@ namespace Backend_API.Endpoints
                 return sensor is not null ? Results.Ok(sensor) : Results.NotFound();
             });
 
-            group.MapDelete("/{deviceMacAddress}", (string deviceMacAddress, SensorRegistrationService sensorService) =>
+            group.MapDelete("/{deviceMacAddress}", (string deviceMacAddress, SensorRegistrationService sensorService, AttachmentsForSensorsService sensorAttachmentService) =>
             {
+                sensorAttachmentService.RemoveSensorAttachments(deviceMacAddress);
+
                 var removedSensor = sensorService.RemoveSensor(deviceMacAddress);
                 return removedSensor ? Results.NoContent() : Results.NotFound();
             });
