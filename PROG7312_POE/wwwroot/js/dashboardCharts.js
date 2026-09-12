@@ -1,21 +1,27 @@
 window.dashboardCharts = {
     charts: {},
 
-    renderTemperatureTrend: function (canvasId, labels, series) {
+    renderTemperatureTrend: function (canvasId, series) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
 
         this.destroy(canvasId);
 
+        const longest = temperatureSeries.reduce((a, b) => (a.points.length > b.points.length ? a : b), { points: [] });
+        const labels = longest.points.map(point => {
+            const date = new Date(point.timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        });
+
         this.charts[canvasId] = new Chart(canvas, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: series.map(s => ({
-                    label: s.label,
-                    data: s.data,
-                    borderColor: s.color,
-                    backgroundColor: this.hexToRgba(s.color, 0.12),
+                datasets: series.map(temperatureSeries => ({
+                    label: temperatureSeries.label,
+                    data: temperatureSeries.data,
+                    borderColor: temperatureSeries.color,
+                    backgroundColor: this.hexToRgba(temperatureSeries.color, 0.12),
                     fill: true,
                     tension: 0.35,
                     pointRadius: 2,

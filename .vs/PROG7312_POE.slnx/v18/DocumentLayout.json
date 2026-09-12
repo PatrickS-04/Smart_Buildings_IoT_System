@@ -1,12 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{397D66F4-7654-62A0-CE2F-90C00855E353}|PROG7312_POE\\PROG7312_POE.csproj|c:\\users\\patri\\onedrive\\desktop\\3rd year projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\prog7312_poe\\pages\\sensorregistration.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{397D66F4-7654-62A0-CE2F-90C00855E353}|PROG7312_POE\\PROG7312_POE.csproj|solutionrelative:prog7312_poe\\pages\\sensorregistration.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -14,7 +9,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -35,19 +30,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SensorRegistration.razor",
-              "DocumentMoniker": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE\\Pages\\SensorRegistration.razor",
-              "RelativeDocumentMoniker": "PROG7312_POE\\Pages\\SensorRegistration.razor",
-              "ToolTip": "C:\\Users\\patri\\OneDrive\\Desktop\\3rd Year Projects\\prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick\\PROG7312_POE\\Pages\\SensorRegistration.razor",
-              "RelativeToolTip": "PROG7312_POE\\Pages\\SensorRegistration.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-09-09T17:40:08.582Z",
-              "EditorCaption": ""
             }
           ]
         },
