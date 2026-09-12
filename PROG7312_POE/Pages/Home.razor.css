@@ -4,6 +4,18 @@
     gap: 2rem;
 }
 
+.loading-state {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 2rem 0;
+}
+
+.empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
 .filter-zones {
     display: flex;
     flex-direction: column;

@@ -1,7 +1,7 @@
 ﻿@page "/"
 @inject IJSRuntime JS
 @implements IDisposable
-@inject HttpClient Http
+@inject HttpClient HttpClient
 
 <PageTitle>Sensor Dashboard</PageTitle>
 
@@ -19,110 +19,125 @@
         </select>
     </div>
 
-    <section class="kpi-grid" aria-label="Building summary">
-        <div class="kpi-card">
-            <p class="kpi-label">Sensors online</p>
-            <p class="kpi-value">@CurrentSnapshot.SensorsOnline<span class="kpi-value-muted"> / @CurrentSnapshot.SensorsTotal</span></p>
-        </div>
-        <div class="kpi-card">
-            <p class="kpi-label">Avg temperature</p>
-            <p class="kpi-value">@CurrentSnapshot.AvgTemperature.ToString("0.0")°C</p>
-        </div>
-        <div class="kpi-card">
-            <p class="kpi-label">Open alerts</p>
-            <p class="kpi-value kpi-value-warn">@CurrentSnapshot.OpenAlerts</p>
-        </div>
-        <div class="kpi-card">
-            <p class="kpi-label">Energy today</p>
-            <p class="kpi-value">@CurrentSnapshot.EnergyTodayKwh.ToString("N0")<span class="kpi-value-muted"> kWh</span></p>
-        </div>
-    </section>
+    @if (_snapshot is null)
+    {
+        <p class="loading-state">Loading live dashboard data...</p>
+    }
+    else
+    {
+        <section class="kpi-grid" aria-label="Building summary">
+            <div class="kpi-card">
+                <p class="kpi-label">Sensors online</p>
+                <p class="kpi-value">@_snapshot.SensorsOnline<span class="kpi-value-muted"> / @_snapshot.SensorsTotal</span></p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Avg temperature</p>
+                <p class="kpi-value">@_snapshot.AvgTemperature.ToString("0.0")°C</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Open alerts</p>
+                <p class="kpi-value kpi-value-warn">@_snapshot.OpenAlerts</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Energy today</p>
+                <p class="kpi-value">@_snapshot.EnergyTodayKwh.ToString("N0")<span class="kpi-value-muted"> kWh</span></p>
+            </div>
+        </section>
 
-    <section class="status-section">
-        <h2>Sensor status — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
-        <div class="status-legend">
-            <span><i class="legend-dot" style="background:var(--status-ok)"></i>Online</span>
-            <span><i class="legend-dot" style="background:var(--status-warn)"></i>Warning</span>
-            <span><i class="legend-dot" style="background:var(--status-critical)"></i>Offline</span>
-        </div>
-        <div class="status-panel">
-            <div class="status-groups">
-                @foreach (var group in CurrentSnapshot.SubZoneStatuses)
+        <section class="status-section">
+            <h2>Sensor status — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="status-legend">
+                <span><i class="legend-dot" style="background:var(--status-ok)"></i>Online</span>
+                <span><i class="legend-dot" style="background:var(--status-warn)"></i>Warning</span>
+                <span><i class="legend-dot" style="background:var(--status-critical)"></i>Offline</span>
+            </div>
+            <div class="status-panel">
+                <div class="status-groups">
+                    @foreach (var group in _snapshot.SubZoneStatuses)
+                    {
+                        <div class="status-group">
+                            <p class="status-group-name">@group.SubZoneName</p>
+                            <div class="status-group-sensors">
+                                @foreach (var sensor in group.Sensors)
+                                {
+                                    <div class="sensor-status-chip" title="@group.SubZoneName — @sensor.Category @sensor.ShortId — @SeverityLabel(sensor.Severity)">
+                                        <span class="status-dot @sensor.Severity"></span>
+                                        <span class="sensor-status-label">@sensor.SensorType - @ShortDeviceMacAddress(sensor.DeviceMacAddress)</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics-section">
+            <h2>Readings by category — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="metric-groups">
+                @foreach (var group in _snapshot.MetricGroups)
                 {
-                    <div class="status-group">
-                        <p class="status-group-name">@group.SubZoneName</p>
-                        <div class="status-group-sensors">
-                            @foreach (var sensor in group.Sensors)
+                    <div class="metric-group">
+                        <p class="metric-group-name">@group.CategoryName</p>
+                        <div class="metric-tiles">
+                            @foreach (var metric in group.Metrics)
                             {
-                                <div class="sensor-status-chip" title="@group.SubZoneName — @sensor.Category @sensor.ShortId — @SeverityLabel(sensor.Severity)">
-                                    <span class="status-dot @sensor.Severity"></span>
-                                    <span class="sensor-status-label">@sensor.Category · @sensor.ShortId</span>
+                                <div class="metric-tile">
+                                    <p class="metric-tile-label">@metric.Label</p>
+                                    <p class="metric-tile-value">@metric.Value</p>
                                 </div>
                             }
                         </div>
                     </div>
                 }
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="metrics-section">
-        <h2>Readings by category — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
-        <div class="metric-groups">
-            @foreach (var group in BuildMetricGroups(CurrentSnapshot))
+        <section class="chart-section">
+            <h2>Temperature trend, last 24h — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="chart-legend">
+                @foreach (var series in _snapshot.TempSeries)
+                {
+                    <span><i class="legend-dot" style="background:@series.Color"></i>@series.Label</span>
+                }
+            </div>
+            <div class="chart-wrap">
+                <canvas id="tempTrendChart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>Energy use by @(_selectedZone == "" ? "floor" : "sub-zone"), today</h2>
+            <div class="chart-wrap chart-wrap-short">
+                <canvas id="floorEnergyChart"></canvas>
+            </div>
+        </section>
+
+        <section class="alerts-section">
+            <h2>Recent alerts</h2>
+            
+            @if (RecentAlerts.Count == 0)
             {
-                <div class="metric-group">
-                    <p class="metric-group-name">@group.CategoryName</p>
-                    <div class="metric-tiles">
-                        @foreach (var metric in group.Metrics)
-                        {
-                            <div class="metric-tile">
-                                <p class="metric-tile-label">@metric.Label</p>
-                                <p class="metric-tile-value">@metric.Value</p>
+                <p class="empty-state">No Open Alerts yet. All sensors are reporting normally</p>
+            }
+            else
+            {
+                <ul class="alert-list">
+                    @foreach (var alert in RecentAlerts)
+                    {
+                        <li class="alert-item">
+                            <span class="status-dot @alert.Severity"></span>
+                            <div class="alert-body">
+                                <p class="alert-title">@alert.Title</p>
+                                <p class="alert-meta">@alert.Location</p>
                             </div>
-                        }
-                    </div>
-                </div>
+                            <span class="alert-time">@alert.TimeAgo</span>
+                        </li>
+                    }
+                </ul>
             }
-        </div>
-    </section>
-
-    <section class="chart-section">
-        <h2>Temperature trend, last 24h — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
-        <div class="chart-legend">
-            @foreach (var series in CurrentSnapshot.TempSeries)
-            {
-                <span><i class="legend-dot" style="background:@series.Color"></i>@series.Label</span>
-            }
-        </div>
-        <div class="chart-wrap">
-            <canvas id="tempTrendChart"></canvas>
-        </div>
-    </section>
-
-    <section class="chart-section">
-        <h2>Energy use by @(_selectedZone == "" ? "floor" : "sub-zone"), today</h2>
-        <div class="chart-wrap chart-wrap-short">
-            <canvas id="floorEnergyChart"></canvas>
-        </div>
-    </section>
-
-    <section class="alerts-section">
-        <h2>Recent alerts</h2>
-        <ul class="alert-list">
-            @foreach (var alert in RecentAlerts)
-            {
-                <li class="alert-item">
-                    <span class="status-dot @alert.Severity"></span>
-                    <div class="alert-body">
-                        <p class="alert-title">@alert.Title</p>
-                        <p class="alert-meta">@alert.Location</p>
-                    </div>
-                    <span class="alert-time">@alert.TimeAgo</span>
-                </li>
-            }
-        </ul>
-    </section>
+        </section>
+    }
 </div>
 
 @code {
@@ -132,270 +147,120 @@
         "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
     };
 
-    private readonly string[] _hourLabels =
-        { "00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00" };
-
-    private record TempSeries(string Label, string Color, double[] Data);
-
-    private record MetricValue(string Label, string Value);
-
-    // Groups metric tiles under one of the 5 sensor category groups from
-    // SensorRegistration.razor, so the dashboard's category breakdown lines
-    // up with what a user actually registers a sensor as.
-    private record MetricGroup(string CategoryName, MetricValue[] Metrics);
-
-    // Severity matches the CSS classes on .status-dot: "" = online (green/teal),
-    // "warn" = warning (amber), "critical" = offline/fault (red).
-    // A class, not a record, because the simulator flips Severity in place.
-    private class SensorStatusItem
-    {
-        public string Category { get; }
-        public string ShortId { get; }
-        public string Severity { get; set; }
-
-        public SensorStatusItem(string category, string shortId, string severity)
-        {
-            Category = category;
-            ShortId = shortId;
-            Severity = severity;
-        }
-    }
-
-    // A room/sub-zone can contain more than one sensor (e.g. a CO2 sensor and
-    // a motion sensor in the same office), so sensors are grouped under the
-    // sub-zone they're deployed in rather than one entry per sub-zone.
-    private record SubZoneStatus(string SubZoneName, SensorStatusItem[] Sensors);
-
-    // Continuous, event-driven, and cumulative readings that the simulator
-    // updates every tick. Split into its own mutable class (not a record)
-    // because these values change in place on a timer.
-    private class LiveMetrics
-    {
-        // Continuous (analog) - random-walked smoothly each tick.
-        public double Humidity;
-        public double Co2;
-        public double LightLevel;
-        public double Vibration;
-        public double PipePressure;
-        public double PowerDrawNow;
-
-        // Event-driven - mostly still, jumps by a small integer occasionally.
-        public int MotionEventsToday;
-        public int RoomsWithPresence;
-        public int PeopleCount;
-
-        // Cumulative - only ever increases (a meter reading, not a live measurement).
-        public double EnergyTodayKwh;
-        public double WaterUsageTodayKwh;
-    }
-
-    private record ZoneSnapshot(
-        TempSeries[] TempSeries, string[] EnergyLabels, double[] EnergyData,
-        SubZoneStatus[] SubZoneStatuses, LiveMetrics Metrics)
-    {
-        // Derived, not stored - these can never disagree with the sensor list
-        // or the chart, because they're computed from the same data those render.
-        public int SensorsTotal => SubZoneStatuses.Sum(g => g.Sensors.Length);
-        public int SensorsOnline => SubZoneStatuses.SelectMany(g => g.Sensors).Count(s => s.Severity != "critical");
-        public int OpenAlerts => SubZoneStatuses.SelectMany(g => g.Sensors).Count(s => s.Severity != "");
-        public double AvgTemperature => Math.Round(TempSeries.Average(s => s.Data[^1]), 1);
-        public double EnergyTodayKwh => Metrics.EnergyTodayKwh;
-    }
-
-    // Placeholder per-sensor status data, grouped by sub-zone (matching
-    // SensorRegistration.razor's SubZones dictionary). Each sub-zone can hold
-    // more than one sensor - a room commonly has both an environmental sensor
-    // and a motion/occupancy sensor, for example. Once sensor registration and
-    // the telemetry simulator are wired to a shared service, each entry here
-    // would instead be one real registered sensor's live status.
-    private static readonly Dictionary<string, SubZoneStatus[]> _sensorStatusesByZone = new()
-    {
-        ["Occupied Spaces"] = new[]
-        {
-            new SubZoneStatus("Open Offices", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-001", ""),
-                new SensorStatusItem("Motion", "SN-002", ""),
-            }),
-            new SubZoneStatus("Private Offices", new[]
-            {
-                new SensorStatusItem("CO2", "SN-003", ""),
-                new SensorStatusItem("Motion", "SN-004", ""),
-            }),
-            new SubZoneStatus("Executive Suites", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-005", ""),
-            }),
-            new SubZoneStatus("Meeting/Conference Rooms", new[]
-            {
-                new SensorStatusItem("CO2", "SN-006", "warn"),
-                new SensorStatusItem("Motion", "SN-007", ""),
-            }),
-    },
-        ["Amenities and Public Areas"] = new[]
-        {
-            new SubZoneStatus("Main Lobby", new[]
-            {
-                new SensorStatusItem("Motion", "SN-010", ""),
-                new SensorStatusItem("Temperature", "SN-011", ""),
-            }),
-            new SubZoneStatus("Lift Lobby", new[] { new SensorStatusItem("Motion", "SN-012", "") }),
-            new SubZoneStatus("Corridor/Hallway", new[] { new SensorStatusItem("Motion", "SN-013", "") }),
-            new SubZoneStatus("Restrooms", new[] { new SensorStatusItem("Occupancy", "SN-014", "") }),
-            new SubZoneStatus("Cafeteria", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-015", ""),
-                new SensorStatusItem("CO2", "SN-016", ""),
-            }),
-            new SubZoneStatus("Gym", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-017", ""),
-                new SensorStatusItem("Occupancy", "SN-018", ""),
-            }),
-    },
-        ["Technical and Utility"] = new[]
-        {
-            new SubZoneStatus("Server Rooms/Data Centers", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-020", "critical"),
-                new SensorStatusItem("Humidity", "SN-021", ""),
-            }),
-            new SubZoneStatus("Electrical Rooms", new[]
-            {
-                new SensorStatusItem("Power", "SN-022", "warn"),
-                new SensorStatusItem("Temperature", "SN-023", ""),
-            }),
-            new SubZoneStatus("HVAC Plant Rooms", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-024", ""),
-                new SensorStatusItem("Power", "SN-025", ""),
-            }),
-    },
-        ["Facilities and Logistics"] = new[]
-        {
-            new SubZoneStatus("Loading Docks", new[]
-            {
-                new SensorStatusItem("Motion", "SN-030", ""),
-                new SensorStatusItem("Temperature", "SN-031", ""),
-            }),
-            new SubZoneStatus("Janitorial Rooms/Closets", new[] { new SensorStatusItem("Motion", "SN-032", "") }),
-            new SubZoneStatus("Waste/Storage Depots", new[] { new SensorStatusItem("Temperature", "SN-033", "") }),
-    },
-        ["Structural and Safety"] = new[]
-        {
-            new SubZoneStatus("Emergency Stairwells", new[] { new SensorStatusItem("Motion", "SN-040", "") }),
-            new SubZoneStatus("Lift Shafts", new[] { new SensorStatusItem("Motion", "SN-041", "") }),
-            new SubZoneStatus("Fire Command Centers", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-042", ""),
-                new SensorStatusItem("Power", "SN-043", ""),
-            }),
-        },
-        ["Exterior and Perimeter"] = new[]
-        {
-            new SubZoneStatus("Parking Garages", new[]
-            {
-                new SensorStatusItem("Motion", "SN-050", ""),
-                new SensorStatusItem("Temperature", "SN-051", ""),
-            }),
-            new SubZoneStatus("Rooftop", new[]
-            {
-                new SensorStatusItem("Temperature", "SN-052", ""),
-                new SensorStatusItem("Power", "SN-053", ""),
-            }),
-            new SubZoneStatus("Main Entrance", new[] { new SensorStatusItem("Motion", "SN-054", "") }),
-        },
-    };
-
-    private static LiveMetrics SeedMetrics(double energyToday) => new()
-    {
-        Humidity = 45,
-        Co2 = 600,
-        LightLevel = 400,
-        Vibration = 0.02,
-        PipePressure = 4.0,
-        PowerDrawNow = energyToday / 24,
-        MotionEventsToday = 0,
-        RoomsWithPresence = 0,
-        PeopleCount = 0,
-        EnergyTodayKwh = energyToday,
-        WaterUsageTodayKwh = energyToday * 0.01,
-    };
-
-    // Placeholder per-zone data - once sensor registration and real telemetry
-    // exist, replace this with data pulled from a shared service. Built as a
-    // method (not a field initializer) because it seeds LiveMetrics per zone.
-    private Dictionary<string, ZoneSnapshot> BuildZoneData() => new()
-    {
-        [""] = new ZoneSnapshot(
-            new[]
-            {
-                new TempSeries("Offices (Zone A)", "#35d0b8", new[] { 21.2, 21.0, 21.4, 22.1, 22.8, 23.0, 22.5, 21.8 }),
-                new TempSeries("Server room (Zone B)", "#f5a623", new[] { 19.5, 19.3, 19.6, 20.1, 20.4, 20.6, 20.2, 19.8 }),
-                new TempSeries("Lobby (Zone C)", "#ff6b6b", new[] { 20.0, 19.6, 20.5, 22.4, 23.8, 24.1, 22.9, 21.0 }),
-            },
-            new[] { "Floor 4", "Floor 3", "Floor 2", "Floor 1" },
-            new[] { 230.0, 340.0, 260.0, 410.0 },
-            _sensorStatusesByZone.Values.SelectMany(s => s).ToArray(),
-            SeedMetrics(1240)),
-
-        ["Occupied Spaces"] = new ZoneSnapshot(
-            new[] { new TempSeries("Occupied Spaces", "#35d0b8", new[] { 21.8, 21.5, 22.0, 22.9, 23.4, 23.6, 23.1, 22.3 }) },
-            new[] { "Open Offices", "Private Offices", "Exec Suites", "Meeting Rooms" },
-            new[] { 140.0, 90.0, 60.0, 50.0 },
-            _sensorStatusesByZone["Occupied Spaces"],
-            SeedMetrics(340)),
-
-        ["Amenities and Public Areas"] = new ZoneSnapshot(
-            new[] { new TempSeries("Amenities and Public Areas", "#35d0b8", new[] { 21.0, 20.8, 21.2, 21.9, 22.4, 22.6, 22.1, 21.4 }) },
-            new[] { "Main Lobby", "Lift Lobby", "Corridor", "Restrooms", "Cafeteria", "Gym" },
-            new[] { 60.0, 20.0, 15.0, 25.0, 55.0, 35.0 },
-            _sensorStatusesByZone["Amenities and Public Areas"],
-            SeedMetrics(210)),
-
-        ["Technical and Utility"] = new ZoneSnapshot(
-            new[] { new TempSeries("Technical and Utility", "#f5a623", new[] { 19.5, 19.3, 19.6, 20.1, 20.4, 20.6, 20.2, 19.8 }) },
-            new[] { "Server Rooms", "Electrical Rooms", "HVAC Plant" },
-            new[] { 310.0, 90.0, 80.0 },
-            _sensorStatusesByZone["Technical and Utility"],
-            SeedMetrics(480)),
-
-        ["Facilities and Logistics"] = new ZoneSnapshot(
-            new[] { new TempSeries("Facilities and Logistics", "#35d0b8", new[] { 20.2, 20.0, 20.4, 21.1, 21.6, 21.8, 21.3, 20.6 }) },
-            new[] { "Loading Docks", "Janitorial", "Waste/Storage" },
-            new[] { 50.0, 20.0, 25.0 },
-            _sensorStatusesByZone["Facilities and Logistics"],
-            SeedMetrics(95)),
-
-        ["Structural and Safety"] = new ZoneSnapshot(
-            new[] { new TempSeries("Structural and Safety", "#35d0b8", new[] { 20.9, 20.7, 21.0, 21.4, 21.7, 21.9, 21.5, 21.0 }) },
-            new[] { "Stairwells", "Lift Shafts", "Fire Command" },
-            new[] { 20.0, 15.0, 25.0 },
-            _sensorStatusesByZone["Structural and Safety"],
-            SeedMetrics(60)),
-
-        ["Exterior and Perimeter"] = new ZoneSnapshot(
-            new[] { new TempSeries("Exterior and Perimeter", "#ff6b6b", new[] { 19.0, 18.5, 19.8, 21.5, 22.8, 23.0, 21.2, 19.5 }) },
-            new[] { "Parking Garage", "Rooftop", "Main Entrance" },
-            new[] { 25.0, 10.0, 20.0 },
-            _sensorStatusesByZone["Exterior and Perimeter"],
-            SeedMetrics(55)),
-    };
-
+    private DashboardSnapshotDto? _snapshot;
     private string _selectedZone = "";
-    
-    private Dictionary<string, ZoneSnapshot> _zoneData = new();
+    private PeriodicTimer? _liveTimer;
 
-    private ZoneSnapshot CurrentSnapshot => _zoneData[_selectedZone];
+    private readonly Dictionary<string, string> previousSeverityByDeviceMacAddress = new();
+    private readonly List<AlertItem> RecentAlerts = new();
 
     private record AlertItem(string Severity, string Title, string Location, string TimeAgo);
 
-    private readonly List<AlertItem> RecentAlerts = new()
+    protected override async Task OnInitializedAsync()
     {
-        new AlertItem("critical", "Water leak detected", "Server room, floor 2", "2 min ago"),
-        new AlertItem("warn", "CO2 above threshold", "Conference room 3A", "18 min ago"),
-        new AlertItem("", "Door left open, resolved", "Loading bay", "1 hr ago"),
-    };
+        await LoadSnapshotAsync();
+        _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        _ = PollLoopAsync();
+    }
+
+    private async Task PollLoopAsync()
+    {
+        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
+        {
+            await LoadSnapshotAsync();
+        }
+    }
+
+    private async Task OnZoneChanged()
+    {
+        await LoadSnapshotAsync();
+    }
+
+    private async Task LoadSnapshotAsync()
+    {
+        try
+        {
+            var zoneParameter = Uri.EscapeDataString(_selectedZone);
+            var snapshot = await HttpClient.GetFromJsonAsync<DashboardSnapshotDto>($"api/dashboard?zone={zoneParameter}");
+
+            if (snapshot is null)
+            {
+                return;
+            }
+
+            DetectAlerts(snapshot);
+            _snapshot = snapshot;
+
+            await InvokeAsync(StateHasChanged);
+            await RenderChartsAsync();
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to load dashboard snapshot: {exception.Message}");
+        }
+    }
+
+    private void DetectAlerts(DashboardSnapshotDto snapshotDto)
+    {
+        foreach (var group in snapshotDto.SubZoneStatuses)
+        {
+            foreach (var sensor in group.Sensors)
+            {
+                var previousSeverity = previousSeverityByDeviceMacAddress.GetValueOrDefault(sensor.DeviceMacAddress, "");
+
+                if (sensor.Severity != previousSeverity)
+                {
+                    if (sensor.Severity is "warn" or "critical")
+                    {
+                        RecentAlerts.Insert(0, new AlertItem(
+                            sensor.Severity,
+                            $"{sensor.SensorType} {(sensor.Severity == "critical" ? "offline or fault" : "reading out of range")}",
+                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            "Just now"
+                        ));
+                    }
+                    else if (previousSeverity is "warn" or "critical")
+                    {
+                        RecentAlerts.Insert(0, new AlertItem(
+                            "",
+                            $"{sensor.SensorType} resolved",
+                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            "Just now"
+                        ));
+                    }
+
+                    if (RecentAlerts.Count > 10)
+                    {
+                        RecentAlerts.RemoveAt(RecentAlerts.Count - 1);
+                    }
+                }
+
+                previousSeverityByDeviceMacAddress[sensor.DeviceMacAddress] = sensor.Severity;
+            }
+        }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        if (_snapshot is null)
+        {
+            return;
+        }
+
+        var series = _snapshot.TemperatureSeries
+            .Select(series => new
+            {
+                label = series.Label,
+                color = series.Color,
+                points = series.Points.Select(point => new { timestamp = point.TimeStamp, value = point.Value }),
+            })
+            .ToArray();
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderTemperatureTrend", "tempTrendChart", series);
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderFloorEnergy",
+            "floorEnergyChart", _snapshot.LabelsForEnergy, _snapshot.DataForEnergy);
+    }
 
     private static string SeverityLabel(string severity) => severity switch
     {
@@ -404,193 +269,8 @@
         _ => "Online",
     };
 
-    // Reads each zone's live-simulated Metrics. Peak sub-meter and air
-    // quality are still derived (from EnergyData / Co2 respectively), since
-    // those are genuinely computed-from-other-readings values in real life too.
-    private static MetricGroup[] BuildMetricGroups(ZoneSnapshot zone)
-    {
-        var m = zone.Metrics;
-        var airQuality = m.Co2 < 700 ? "Good" : m.Co2 < 1000 ? "Moderate" : "Poor";
-        var peakIndex = zone.EnergyData.Length > 0
-            ? Array.IndexOf(zone.EnergyData, zone.EnergyData.Max())
-            : -1;
-        var peakArea = peakIndex >= 0 ? zone.EnergyLabels[peakIndex] : "—";
-
-        return new[]
-        {
-            new MetricGroup("Environmental", new[]
-            {
-                new MetricValue("Humidity", $"{m.Humidity:0}%"),
-                new MetricValue("CO2", $"{m.Co2:0} ppm"),
-                new MetricValue("Air quality", airQuality),
-                new MetricValue("Light level", $"{m.LightLevel:0} lux"),
-            }),
-            new MetricGroup("Occupancy and Motion", new[]
-            {
-                new MetricValue("Motion events today", $"{m.MotionEventsToday}"),
-                new MetricValue("Rooms with presence", $"{m.RoomsWithPresence}"),
-                new MetricValue("People count", $"{m.PeopleCount}"),
-            }),
-            new MetricGroup("Energy and Power Consumption", new[]
-            {
-                new MetricValue("Power draw now", $"{m.PowerDrawNow:0.0} kW"),
-                new MetricValue("Water usage today", $"{m.WaterUsageTodayKwh:0.0} kL"),
-                new MetricValue("Peak sub-meter", peakArea),
-            }),
-            new MetricGroup("Safety and Security", new[]
-            {
-                new MetricValue("Active alerts", $"{zone.OpenAlerts}"),
-            }),
-            new MetricGroup("Structural and Facility", new[]
-            {
-                new MetricValue("Vibration", $"{m.Vibration:0.00} g"),
-                new MetricValue("Pipe pressure", $"{m.PipePressure:0.0} bar"),
-            }),
-        };
-    }
-
-    private async Task OnZoneChanged()
-    {
-        await RenderChartsAsync();
-    }
-
-    protected override void OnInitialized()
-    {
-        _zoneData = BuildZoneData();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await RenderChartsAsync();
-            _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
-            _ = RunLiveUpdatesAsync();
-        }
-    }
-
-    private readonly Random _random = new();
-    private PeriodicTimer? _liveTimer;
-
-    private double Walk(double current, double step, double min, double max) =>
-        Math.Round(Math.Clamp(current + (_random.NextDouble() * 2 - 1) * step, min, max), 2);
-
-    private int MaybeJump(int current, double probability, int min, int max)
-    {
-        if (_random.NextDouble() < probability)
-        {
-            current = Math.Clamp(current + _random.Next(-1, 2), min, max);
-        }
-        return current;
-    }
-
-    private double Accumulate(double current, double ratePerTick) =>
-        Math.Round(current + ratePerTick * (0.5 + _random.NextDouble()), 2);
-
-    private async Task RunLiveUpdatesAsync()
-    {
-        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
-        {
-            // Continuous + cumulative signals: every zone drifts independently,
-            // including the "All zones" overview (it has its own seeded metrics,
-            // not a sum of the others).
-            foreach (var zone in _zoneData.Values)
-            {
-                NudgeContinuousAndCumulative(zone);
-            }
-
-            // Event-driven sensor status flips: only the 6 real zones, never the
-            // "" aggregate - its SubZoneStatuses array holds the SAME sensor
-            // objects as the real zones (built via SelectMany), so nudging both
-            // would flip each sensor twice per tick and double-fire alerts.
-            foreach (var (zoneName, subZones) in _sensorStatusesByZone)
-            {
-                NudgeSensorStatuses(zoneName, subZones);
-            }
-
-            await InvokeAsync(StateHasChanged);
-            await RenderChartsAsync();
-        }
-    }
-
-    private void NudgeContinuousAndCumulative(ZoneSnapshot zone)
-    {
-        foreach (var series in zone.TempSeries)
-        {
-            series.Data[^1] = Walk(series.Data[^1], 0.3, 16, 30);
-        }
-
-        for (var i = 0; i < zone.EnergyData.Length; i++)
-        {
-            zone.EnergyData[i] = Math.Max(0, Walk(zone.EnergyData[i], 4, 0, 1000));
-        }
-
-        var m = zone.Metrics;
-        m.Humidity = Walk(m.Humidity, 0.6, 30, 70);
-        m.Co2 = Walk(m.Co2, 8, 400, 1400);
-        m.LightLevel = Walk(m.LightLevel, 12, 100, 900);
-        m.Vibration = Walk(m.Vibration, 0.005, 0, 0.3);
-        m.PipePressure = Walk(m.PipePressure, 0.05, 2, 6);
-        m.PowerDrawNow = Walk(m.PowerDrawNow, 0.3, 0.2, 25);
-
-        m.MotionEventsToday += _random.NextDouble() < 0.4 ? 1 : 0; // only ever increases
-        m.RoomsWithPresence = MaybeJump(m.RoomsWithPresence, 0.1, 0, Math.Max(zone.SensorsTotal, 1));
-        m.PeopleCount = MaybeJump(m.PeopleCount, 0.15, 0, 500);
-
-        m.EnergyTodayKwh = Accumulate(m.EnergyTodayKwh, m.PowerDrawNow / 720); // kWh added this 5s tick
-        m.WaterUsageTodayKwh = Accumulate(m.WaterUsageTodayKwh, 0.02);
-    }
-
-    private void NudgeSensorStatuses(string zoneName, SubZoneStatus[] subZones)
-    {
-        foreach (var group in subZones)
-        {
-            foreach (var sensor in group.Sensors)
-            {
-                var previous = sensor.Severity;
-                var roll = _random.NextDouble();
-
-                sensor.Severity = previous switch
-                {
-                    "critical" => roll < 0.20 ? "warn" : "critical",                // occasionally starts recovering
-                    "warn" => roll < 0.15 ? "critical" : roll < 0.35 ? "" : "warn", // can worsen, recover, or persist
-                    _ => roll < 0.005 ? "warn" : "",                                // rare fresh fault
-                };
-
-                if (sensor.Severity != previous && sensor.Severity is "warn" or "critical")
-                {
-                    RecentAlerts.Insert(0, new AlertItem(
-                        sensor.Severity,
-                        $"{sensor.Category} {(sensor.Severity == "critical" ? "offline" : "reading out of range")}",
-                        $"{zoneName}, {group.SubZoneName} · {sensor.ShortId}",
-                        "Just now"));
-
-                    if (RecentAlerts.Count > 20)
-                    {
-                        RecentAlerts.RemoveAt(RecentAlerts.Count - 1);
-                    }
-                }
-            }
-        }
-    }
-
     public void Dispose()
     {
         _liveTimer?.Dispose();
-    }
-
-    private async Task RenderChartsAsync()
-    {
-        var snapshot = CurrentSnapshot;
-
-        var series = snapshot.TempSeries
-            .Select(s => new { label = s.Label, color = s.Color, data = s.Data })
-            .ToArray();
-
-        await JS.InvokeVoidAsync("dashboardCharts.renderTemperatureTrend",
-            "tempTrendChart", _hourLabels, series);
-
-        await JS.InvokeVoidAsync("dashboardCharts.renderFloorEnergy",
-            "floorEnergyChart", snapshot.EnergyLabels, snapshot.EnergyData);
     }
 }
