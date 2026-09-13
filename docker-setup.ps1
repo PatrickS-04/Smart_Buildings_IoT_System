@@ -12,10 +12,18 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "Checking Docker is running..." -ForegroundColor Cyan
-docker info *> $null
+cmd /c "docker info 2>nul"
+
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Docker doesn't seem to be running. Start Docker Desktop and try again." -ForegroundColor Red
-    exit 1
+    Write-Host "Docker is not running. Launching Docker Desktop..."
+    Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    
+    while ($true) {
+        cmd /c "docker info 2>nul"
+        if ($LASTEXITCODE -eq 0) { break }
+        Start-Sleep -Seconds 2
+    }
+    Write-Host "Docker is ready!"
 }
 
 Write-Host "Building and starting the Smart-X containers (this can take a few minutes on the first run)..." -ForegroundColor Cyan

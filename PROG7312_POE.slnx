@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path="docker-compose.yml" />
+  </Folder>
   <Project Path="Backend_API/Backend_API.csproj" Id="89b46332-46bf-49a2-87ee-ae3b6472f567" />
   <Project Path="PROG7312_POE.Shared/PROG7312_POE.Shared.csproj" Id="88789cec-ccb4-4ec7-b5ab-52f02cbc5642" />
   <Project Path="PROG7312_POE/PROG7312_POE.csproj" />

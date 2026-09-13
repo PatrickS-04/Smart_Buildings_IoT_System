@@ -14,9 +14,14 @@ builder.Services.AddSingleton<BuildingConfigurationService>();
 builder.Services.AddSingleton<RawTelemetryBatchService>();
 builder.Services.AddSingleton<AttachmentsForSensorsService>();
 builder.Services.AddSingleton<SensorDashboardAggregationService>();
+
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
-    httpClient.BaseAddress = new Uri("https://localhost:7194/");
+    var selfAddress = builder.Environment.IsDevelopment()
+        ? "https://localhost:7194/"
+        : "http://localhost:8080/";
+
+    httpClient.BaseAddress = new Uri(selfAddress);
 });
 
 builder.Services.AddHostedService<SimulatedTelemetryService>();
@@ -35,14 +40,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
 app.UseCors("AllowClient");
 
 app.MapSensorEndpoints();
