@@ -1,0 +1,276 @@
+﻿@page "/"
+@inject IJSRuntime JS
+@implements IDisposable
+@inject HttpClient HttpClient
+
+<PageTitle>Sensor Dashboard</PageTitle>
+
+<div class="dashboard">
+    <h1>Building Telemetry</h1>
+
+    <div class="filter-zones">
+        <label for="zonefilter">View a Main Zone</label>
+        <select id="zonefilter" class="form-control" @bind:after="OnZoneChanged" @bind="_selectedZone">
+            <option value="">All Zones</option>
+            @foreach (var zone in MainZones)
+            {
+                <option value="@zone">@zone</option>
+            }
+        </select>
+    </div>
+
+    @if (_snapshot is null)
+    {
+        <p class="loading-state">Loading live dashboard data...</p>
+    }
+    else
+    {
+        <section class="kpi-grid" aria-label="Building summary">
+            <div class="kpi-card">
+                <p class="kpi-label">Sensors online</p>
+                <p class="kpi-value">@_snapshot.SensorsOnline<span class="kpi-value-muted"> / @_snapshot.SensorsTotal</span></p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Avg temperature</p>
+                <p class="kpi-value">@_snapshot.AvgTemperature.ToString("0.0")°C</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Open alerts</p>
+                <p class="kpi-value kpi-value-warn">@_snapshot.OpenAlerts</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Energy today</p>
+                <p class="kpi-value">@_snapshot.EnergyTodayKwh.ToString("N0")<span class="kpi-value-muted"> kWh</span></p>
+            </div>
+        </section>
+
+        <section class="status-section">
+            <h2>Sensor status — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="status-legend">
+                <span><i class="legend-dot" style="background:var(--status-ok)"></i>Online</span>
+                <span><i class="legend-dot" style="background:var(--status-warn)"></i>Warning</span>
+                <span><i class="legend-dot" style="background:var(--status-critical)"></i>Offline</span>
+            </div>
+            <div class="status-panel">
+                <div class="status-groups">
+                    @foreach (var group in _snapshot.SubZoneStatuses)
+                    {
+                        <div class="status-group">
+                            <p class="status-group-name">@group.SubZoneName</p>
+                            <div class="status-group-sensors">
+                                @foreach (var sensor in group.Sensors)
+                                {
+                                    <div class="sensor-status-chip" title="@group.SubZoneName — @sensor.Category @sensor.ShortId — @SeverityLabel(sensor.Severity)">
+                                        <span class="status-dot @sensor.Severity"></span>
+                                        <span class="sensor-status-label">@sensor.SensorType - @ShortDeviceMacAddress(sensor.DeviceMacAddress)</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics-section">
+            <h2>Readings by category — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="metric-groups">
+                @foreach (var group in _snapshot.MetricGroups)
+                {
+                    <div class="metric-group">
+                        <p class="metric-group-name">@group.CategoryName</p>
+                        <div class="metric-tiles">
+                            @foreach (var metric in group.Metrics)
+                            {
+                                <div class="metric-tile">
+                                    <p class="metric-tile-label">@metric.Label</p>
+                                    <p class="metric-tile-value">@metric.Value</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>Temperature trend, last 24h — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
+            <div class="chart-legend">
+                @foreach (var series in _snapshot.TempSeries)
+                {
+                    <span><i class="legend-dot" style="background:@series.Color"></i>@series.Label</span>
+                }
+            </div>
+            <div class="chart-wrap">
+                <canvas id="tempTrendChart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>Energy use by @(_selectedZone == "" ? "floor" : "sub-zone"), today</h2>
+            <div class="chart-wrap chart-wrap-short">
+                <canvas id="floorEnergyChart"></canvas>
+            </div>
+        </section>
+
+        <section class="alerts-section">
+            <h2>Recent alerts</h2>
+            
+            @if (RecentAlerts.Count == 0)
+            {
+                <p class="empty-state">No Open Alerts yet. All sensors are reporting normally</p>
+            }
+            else
+            {
+                <ul class="alert-list">
+                    @foreach (var alert in RecentAlerts)
+                    {
+                        <li class="alert-item">
+                            <span class="status-dot @alert.Severity"></span>
+                            <div class="alert-body">
+                                <p class="alert-title">@alert.Title</p>
+                                <p class="alert-meta">@alert.Location</p>
+                            </div>
+                            <span class="alert-time">@alert.TimeAgo</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private static readonly string[] MainZones =
+    {
+        "Occupied Spaces", "Amenities and Public Areas", "Technical and Utility",
+        "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
+    };
+
+    private DashboardSnapshotDto? _snapshot;
+    private string _selectedZone = "";
+    private PeriodicTimer? _liveTimer;
+
+    private readonly Dictionary<string, string> previousSeverityByDeviceMacAddress = new();
+    private readonly List<AlertItem> RecentAlerts = new();
+
+    private record AlertItem(string Severity, string Title, string Location, string TimeAgo);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSnapshotAsync();
+        _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        _ = PollLoopAsync();
+    }
+
+    private async Task PollLoopAsync()
+    {
+        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
+        {
+            await LoadSnapshotAsync();
+        }
+    }
+
+    private async Task OnZoneChanged()
+    {
+        await LoadSnapshotAsync();
+    }
+
+    private async Task LoadSnapshotAsync()
+    {
+        try
+        {
+            var zoneParameter = Uri.EscapeDataString(_selectedZone);
+            var snapshot = await HttpClient.GetFromJsonAsync<DashboardSnapshotDto>($"api/dashboard?zone={zoneParameter}");
+
+            if (snapshot is null)
+            {
+                return;
+            }
+
+            DetectAlerts(snapshot);
+            _snapshot = snapshot;
+
+            await InvokeAsync(StateHasChanged);
+            await RenderChartsAsync();
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to load dashboard snapshot: {exception.Message}");
+        }
+    }
+
+    private void DetectAlerts(DashboardSnapshotDto snapshotDto)
+    {
+        foreach (var group in snapshotDto.SubZoneStatuses)
+        {
+            foreach (var sensor in group.Sensors)
+            {
+                var previousSeverity = previousSeverityByDeviceMacAddress.GetValueOrDefault(sensor.DeviceMacAddress, "");
+
+                if (sensor.Severity != previousSeverity)
+                {
+                    if (sensor.Severity is "warn" or "critical")
+                    {
+                        RecentAlerts.Insert(0, new AlertItem(
+                            sensor.Severity,
+                            $"{sensor.SensorType} {(sensor.Severity == "critical" ? "offline or fault" : "reading out of range")}",
+                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            "Just now"
+                        ));
+                    }
+                    else if (previousSeverity is "warn" or "critical")
+                    {
+                        RecentAlerts.Insert(0, new AlertItem(
+                            "",
+                            $"{sensor.SensorType} resolved",
+                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            "Just now"
+                        ));
+                    }
+
+                    if (RecentAlerts.Count > 10)
+                    {
+                        RecentAlerts.RemoveAt(RecentAlerts.Count - 1);
+                    }
+                }
+
+                previousSeverityByDeviceMacAddress[sensor.DeviceMacAddress] = sensor.Severity;
+            }
+        }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        if (_snapshot is null)
+        {
+            return;
+        }
+
+        var series = _snapshot.TemperatureSeries
+            .Select(series => new
+            {
+                label = series.Label,
+                color = series.Color,
+                points = series.Points.Select(point => new { timestamp = point.TimeStamp, value = point.Value }),
+            })
+            .ToArray();
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderTemperatureTrend", "tempTrendChart", series);
+
+        await JS.InvokeVoidAsync("dashboardCharts.renderFloorEnergy",
+            "floorEnergyChart", _snapshot.LabelsForEnergy, _snapshot.DataForEnergy);
+    }
+
+    private static string SeverityLabel(string severity) => severity switch
+    {
+        "warn" => "Warning",
+        "critical" => "Offline",
+        _ => "Online",
+    };
+
+    public void Dispose()
+    {
+        _liveTimer?.Dispose();
+    }
+}
