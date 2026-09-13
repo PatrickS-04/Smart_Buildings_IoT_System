@@ -2,6 +2,7 @@
 @inject IJSRuntime JS
 @implements IDisposable
 @inject HttpClient HttpClient
+@using PROG7312_POE.Shared.DTOs
 
 <PageTitle>Sensor Dashboard</PageTitle>
 
@@ -28,15 +29,15 @@
         <section class="kpi-grid" aria-label="Building summary">
             <div class="kpi-card">
                 <p class="kpi-label">Sensors online</p>
-                <p class="kpi-value">@_snapshot.SensorsOnline<span class="kpi-value-muted"> / @_snapshot.SensorsTotal</span></p>
+                <p class="kpi-value">@_snapshot.NumberOfSensorsOnline<span class="kpi-value-muted"> / @_snapshot.TotalNumberOfSensors</span></p>
             </div>
             <div class="kpi-card">
                 <p class="kpi-label">Avg temperature</p>
-                <p class="kpi-value">@_snapshot.AvgTemperature.ToString("0.0")°C</p>
+                <p class="kpi-value">@_snapshot.AverageTemperature.ToString("0.0")°C</p>
             </div>
             <div class="kpi-card">
                 <p class="kpi-label">Open alerts</p>
-                <p class="kpi-value kpi-value-warn">@_snapshot.OpenAlerts</p>
+                <p class="kpi-value kpi-value-warn">@_snapshot.SensorOpenAlerts</p>
             </div>
             <div class="kpi-card">
                 <p class="kpi-label">Energy today</p>
@@ -56,11 +57,11 @@
                     @foreach (var group in _snapshot.SubZoneStatuses)
                     {
                         <div class="status-group">
-                            <p class="status-group-name">@group.SubZoneName</p>
+                            <p class="status-group-name">@group.NameOfSubZone</p>
                             <div class="status-group-sensors">
                                 @foreach (var sensor in group.Sensors)
                                 {
-                                    <div class="sensor-status-chip" title="@group.SubZoneName — @sensor.Category @sensor.ShortId — @SeverityLabel(sensor.Severity)">
+                                    <div class="sensor-status-chip" title="@group.NameOfSubZone — @sensor.Category @sensor.DeviceMacAddress — @SeverityLabel(sensor.Severity)">
                                         <span class="status-dot @sensor.Severity"></span>
                                         <span class="sensor-status-label">@sensor.SensorType - @ShortDeviceMacAddress(sensor.DeviceMacAddress)</span>
                                     </div>
@@ -75,7 +76,7 @@
         <section class="metrics-section">
             <h2>Readings by category — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
             <div class="metric-groups">
-                @foreach (var group in _snapshot.MetricGroups)
+                @foreach (var group in _snapshot.MetricGroup)
                 {
                     <div class="metric-group">
                         <p class="metric-group-name">@group.CategoryName</p>
@@ -83,8 +84,8 @@
                             @foreach (var metric in group.Metrics)
                             {
                                 <div class="metric-tile">
-                                    <p class="metric-tile-label">@metric.Label</p>
-                                    <p class="metric-tile-value">@metric.Value</p>
+                                    <p class="metric-tile-label">@metric.MetricLabel</p>
+                                    <p class="metric-tile-value">@metric.MetricValue</p>
                                 </div>
                             }
                         </div>
@@ -96,9 +97,9 @@
         <section class="chart-section">
             <h2>Temperature trend, last 24h — @(_selectedZone == "" ? "All zones" : _selectedZone)</h2>
             <div class="chart-legend">
-                @foreach (var series in _snapshot.TempSeries)
+                @foreach (var series in _snapshot.TemperatureSeries)
                 {
-                    <span><i class="legend-dot" style="background:@series.Color"></i>@series.Label</span>
+                    <span><i class="legend-dot" style="background:@series.TempColor"></i>@series.TempLabel</span>
                 }
             </div>
             <div class="chart-wrap">
@@ -147,7 +148,7 @@
         "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
     };
 
-    private DashboardSnapshotDto? _snapshot;
+    private SensorDashboardDto? _snapshot;
     private string _selectedZone = "";
     private PeriodicTimer? _liveTimer;
 
@@ -181,7 +182,7 @@
         try
         {
             var zoneParameter = Uri.EscapeDataString(_selectedZone);
-            var snapshot = await HttpClient.GetFromJsonAsync<DashboardSnapshotDto>($"api/dashboard?zone={zoneParameter}");
+            var snapshot = await HttpClient.GetFromJsonAsync<SensorDashboardDto>($"api/dashboard?zone={zoneParameter}");
 
             if (snapshot is null)
             {
@@ -200,7 +201,7 @@
         }
     }
 
-    private void DetectAlerts(DashboardSnapshotDto snapshotDto)
+    private void DetectAlerts(SensorDashboardDto snapshotDto)
     {
         foreach (var group in snapshotDto.SubZoneStatuses)
         {
@@ -215,7 +216,7 @@
                         RecentAlerts.Insert(0, new AlertItem(
                             sensor.Severity,
                             $"{sensor.SensorType} {(sensor.Severity == "critical" ? "offline or fault" : "reading out of range")}",
-                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            $"{group.NameOfSubZone} · {ShortDeviceMacAddress(sensor.DeviceMacAddress)}",
                             "Just now"
                         ));
                     }
@@ -224,7 +225,7 @@
                         RecentAlerts.Insert(0, new AlertItem(
                             "",
                             $"{sensor.SensorType} resolved",
-                            $"{group.SubZoneName} · {ShortMac(sensor.DeviceMacAddress)}",
+                            $"{group.NameOfSubZone} · {ShortDeviceMacAddress(sensor.DeviceMacAddress)}",
                             "Just now"
                         ));
                     }
@@ -250,9 +251,9 @@
         var series = _snapshot.TemperatureSeries
             .Select(series => new
             {
-                label = series.Label,
-                color = series.Color,
-                points = series.Points.Select(point => new { timestamp = point.TimeStamp, value = point.Value }),
+                label = series.TempLabel,
+                color = series.TempColor,
+                points = series.PointsInTime.Select(point => new { timestamp = point.TimeStamp, value = point.Value }),
             })
             .ToArray();
 
@@ -268,6 +269,8 @@
         "critical" => "Offline",
         _ => "Online",
     };
+
+    private static string ShortDeviceMacAddress(string deviceMacAddress) => deviceMacAddress.Length <= 6 ? deviceMacAddress : deviceMacAddress[^6..];
 
     public void Dispose()
     {
