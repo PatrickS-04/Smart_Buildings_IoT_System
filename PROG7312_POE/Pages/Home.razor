@@ -182,7 +182,7 @@
         try
         {
             var zoneParameter = Uri.EscapeDataString(_selectedZone);
-            var snapshot = await HttpClient.GetFromJsonAsync<SensorDashboardDto>($"api/dashboard?zone={zoneParameter}");
+            var snapshot = await HttpClient.GetFromJsonAsync<SensorDashboardDto>($"api/dashboard?sensorZone={zoneParameter}");
 
             if (snapshot is null)
             {

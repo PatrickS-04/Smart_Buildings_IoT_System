@@ -2,6 +2,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Headers
 @using PROG7312_POE.Shared.DTOs
+@using PROG7312_POE.Shared
 @inject HttpClient Http
 
 <PageTitle>Sensor Registration</PageTitle>
@@ -31,7 +32,7 @@
                     <label for="mainzone">Main Zone</label>
                     <InputSelect id="mainzone" class="form-control" @bind-Value="_model.MainZone" @bind-Value:after="OnMainZoneChanged">
                         <option value="">Select a Main Zone</option>
-                        @foreach (var mainZone in MainZones)
+                        @foreach (var mainZone in SensorCategorization.MainZones)
                         {
                             <option value="@mainZone">@mainZone</option>
                         }
@@ -70,7 +71,7 @@
                     <label for="category">Sensor Category</label>
                     <InputSelect id="category" class="form-control" @bind-Value="_model.Category" @bind-Value:after="OnCategoryChanged">
                         <option value="">Select a Category</option>
-                        @foreach (var category in Categories)
+                        @foreach (var category in SensorCategorization.SensorCategories)
                         {
                             <option value="@category">@category</option>
                         }
@@ -159,42 +160,11 @@
 </div>
 
 @code {
-    private static readonly string[] MainZones =
-    {
-        "Occupied Spaces", "Amenities and Public Areas", "Technical and Utility", 
-        "Facilities and Logistics", "Structural and Safety", "Exterior and Perimeter"
-    };
-
-    private static readonly Dictionary<string, string[]> SubZones = new()
-    {
-        ["Occupied Spaces"] = new[] { "Open Offices", "Private Offices", "Executive Suites", "Meeting/Conference Rooms" },
-        ["Amenities and Public Areas"] = new[] { "Main Lobby", "Lift Lobby", "Corridor/Hallway", "Restrooms", "Cafeteria", "Gym" },
-        ["Technical and Utility"] = new[] { "Server Rooms/Data Centers", "Electrical Rooms", "HVAC Plant Rooms" },
-        ["Facilities and Logistics"] = new[] { "Loading Docks", "Janitorial Rooms/Closets", "Waste/Storage Depots" },
-        ["Structural and Safety"] = new[] { "Emergency Stairwells", "Lift Shafts", "Fire Command Centers" },
-        ["Exterior and Perimeter"] = new[] { "Parking Garages", "Rooftop", "Main Entrance" }
-    };
-
-    private static readonly string[] Categories =
-    {
-        "Environmental", "Occupancy and Motion", "Safety and Security", "Structural and Facility", "Energy and Power Consumption"    
-    };
-
-    // Specific sensor types available under each category group.
-    private static readonly Dictionary<string, string[]> SensorTypesByCategory = new()
-    {
-        ["Environmental"] = new[] { "Temperature", "Humidity", "CO2 (Carbon Dioxide)", "Air Quality (VOCs)", "Light Level (Lux)" },
-        ["Occupancy and Motion"] = new[] { "Motion (PIR)", "Presence", "People Counting" },
-        ["Energy and Power Consumption"] = new[] { "Power Meters", "Energy Sub-meters", "Utility Meters" },
-        ["Safety and Security"] = new[] { "Smoke and Fire", "Water Leak", "Door and Window Contacts", "Glass Break" },
-        ["Structural and Facility"] = new[] { "Vibration", "Pipe Pressure" },
-    };
-
     private string[] CurrentSensorTypes =>
-        string.IsNullOrEmpty(_model.Category) ? Array.Empty<string>() : SensorTypesByCategory.GetValueOrDefault(_model.Category, Array.Empty<string>());
+        string.IsNullOrEmpty(_model.Category) ? Array.Empty<string>() : SensorCategorization.SensorTypesByCategory.GetValueOrDefault(_model.Category, Array.Empty<string>());
 
     private string[] CurrentSubZones =>
-        string.IsNullOrEmpty(_model.MainZone) ? Array.Empty<string>() : SubZones.GetValueOrDefault(_model.MainZone, Array.Empty<string>());
+        string.IsNullOrEmpty(_model.MainZone) ? Array.Empty<string>() : SensorCategorization.SubZones.GetValueOrDefault(_model.MainZone, Array.Empty<string>());
 
     private class DisplayOfSensor
     {

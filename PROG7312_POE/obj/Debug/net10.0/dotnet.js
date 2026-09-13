@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "PROG7312_POE",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-GIQz3Mlw1mCyWQP3RKjvSjdN7GCOgP49/3ENrueU8mM=",
+    "hash": "sha256-saBu1ohgrE0qASW7Ykhjen5pKj+dewMqwbK4Og+Ftck=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.vzj2a6aakt.js"
@@ -1236,8 +1236,8 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "PROG7312_POE.Shared.wasm",
-        "name": "PROG7312_POE.Shared.s85nygdf3g.wasm",
-        "hash": "sha256-TKxui+ELtT5jhhHkF8fcy16GVhdESLp8W56kHZBonfU=",
+        "name": "PROG7312_POE.Shared.xa61md10h9.wasm",
+        "hash": "sha256-KRBjaVEID1QoSWIBO+5b6S9V+L5HBttGEZ+1yEFXEPU=",
         "cache": "force-cache"
       },
       {
@@ -1248,22 +1248,22 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "PROG7312_POE.wasm",
-        "name": "PROG7312_POE.943nfcqs4g.wasm",
-        "hash": "sha256-d9FUewcOCwn00aVNSxN5WAlny2J5VlX/DNM/eB54ZPA=",
+        "name": "PROG7312_POE.dvj4hcdvi8.wasm",
+        "hash": "sha256-mS5WM/s5cplxdsj5p+NPqGLD3BsVnYa1b3Te+xrYIHg=",
         "cache": "force-cache"
       }
     ],
     "pdb": [
       {
         "virtualPath": "PROG7312_POE.Shared.pdb",
-        "name": "PROG7312_POE.Shared.q4vlfxv5az.pdb",
-        "hash": "sha256-JqzAk0td/9zlQXcprEa/NP+7WWObuFXiN0XbwJIqQ6A=",
+        "name": "PROG7312_POE.Shared.nqb7e8uceb.pdb",
+        "hash": "sha256-LwUal+djCjZvd2vJhe4hGuYi2eBBwqighD5DEhDhqBU=",
         "cache": "force-cache"
       },
       {
         "virtualPath": "PROG7312_POE.pdb",
-        "name": "PROG7312_POE.xqc2scz6zv.pdb",
-        "hash": "sha256-CalC1C9kWnUkAtaFSKX4s7C9bjgFyaaf4PT9zdFWqxs=",
+        "name": "PROG7312_POE.f24xgofjy0.pdb",
+        "hash": "sha256-KU3MyrM6EhGT79u/7knS5/BIdPL0EwTwMqsA5EtfRY4=",
         "cache": "force-cache"
       }
     ],
