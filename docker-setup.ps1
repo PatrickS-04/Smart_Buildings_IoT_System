@@ -11,6 +11,8 @@
 
 $ErrorActionPreference = "Stop"
 
+Set-Location $PSScriptRoot
+
 Write-Host "Checking Docker is running..." -ForegroundColor Cyan
 cmd /c "docker info 2>nul"
 
