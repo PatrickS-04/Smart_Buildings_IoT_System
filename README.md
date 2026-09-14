@@ -7,9 +7,13 @@ Part 1 includes a dashboard which simulates IoT sensors in Smart Buildings as we
 
 **Project Architecture Structure:**
 ```mermaid
-PROG7312_POE (Blazor WebAssembly Frontend) ----------
-                                                     | --------> PROG7312_POE.Shared (Shared Class Library)
-Backend_API (ASP .NET Core Minimal API) -------------
+flowchart LR
+    Frontend[PROG7312_POE <br> Blazor WebAssembly Frontend]
+    Backend[Backend_API <br> ASP .NET Core Minimal API]
+    Shared[PROG7312_POE.Shared <br> Shared Class Library]
+
+    Frontend --> Shared
+    Backend --> Shared
 ```
 
 As you can see the architecture structure above, both the frontend and backend projects reference the Shared Class Library instead of reference each other.
