@@ -18,7 +18,14 @@ cmd /c "docker info 2>nul"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Docker is not running. Launching Docker Desktop..."
-    Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    $dockerDesktop = "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
+
+    if (Test-Path $dockerDesktop) {
+        Start-Process $dockerDesktop
+    } else {
+        Write-Host "Docker Desktop could not be found at $dockerDesktop" -ForegroundColor Red
+        exit 1
+    }
     
     while ($true) {
         cmd /c "docker info 2>nul"
