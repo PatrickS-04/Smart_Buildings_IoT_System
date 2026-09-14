@@ -62,3 +62,6 @@ As per my Task 1 Research of Part 1 in which i chose the real-time visual teleme
 
 **Improvement of Design:**
 In my application, i have designed it that currently, the system could be used for 1 specific building and add all sensors in that particular building. I could improve this design if necessary to allow buildings to be the first entry rather than the current Main Zone entry. This improvement would then allow an organization or a group of investors who manage or own more than 1 building and want to use 1 application for their sensor monitoring across all their buildings. Having said this, they could still use the application as it is designed currently but would have several different instances of the application running to see each individual building. The improvement would allow 1 instance of the application for them to see all their buildings and the sensors for each building. This is just a more efficient improvement that could be made to the application.
+
+**Youtube Video Presentation Link:**
+https://youtu.be/zTut_YZjuDE
