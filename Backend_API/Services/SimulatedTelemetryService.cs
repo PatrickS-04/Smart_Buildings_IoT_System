@@ -16,10 +16,14 @@ namespace Backend_API.Services
         private readonly Dictionary<string, int> _lastIntValue = new();
         private readonly Dictionary<string, bool> _lastBoolValue = new();
 
-        public SimulatedTelemetryService(SensorRegistrationService sensorRegistrationService, IHttpClientFactory httpClientFactory)
+        private readonly DeviceStateService _deviceStateService;
+
+        public SimulatedTelemetryService(SensorRegistrationService sensorRegistrationService, IHttpClientFactory httpClientFactory, 
+            DeviceStateService deviceStateService)
         {
             _sensorRegistrationService = sensorRegistrationService;
             _httpClientFactory = httpClientFactory;
+            _deviceStateService = deviceStateService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -33,7 +37,13 @@ namespace Backend_API.Services
             {
                 foreach (var sensor in _sensorRegistrationService.GetAllSensors())
                 {
+                    if (_deviceStateService.IsSilenced(sensor.DeviceMacAddress))
+                    {
+                        continue;
+                    }
+                    
                     var request = BuildTelemetryIngestionRequest(sensor);
+                    
                     if (request is null)
                     {
                         continue;

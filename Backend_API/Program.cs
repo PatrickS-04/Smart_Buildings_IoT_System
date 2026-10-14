@@ -15,6 +15,9 @@ builder.Services.AddSingleton<RawTelemetryBatchService>();
 builder.Services.AddSingleton<AttachmentsForSensorsService>();
 builder.Services.AddSingleton<SensorDashboardAggregationService>();
 builder.Services.AddSingleton<TelemetryIngestionQueueService>();
+builder.Services.AddSingleton<DeviceStateService>();
+builder.Services.AddSingleton<TelemetryHistoryService>();
+builder.Services.AddSingleton<AlertStateService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
