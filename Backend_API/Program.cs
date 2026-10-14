@@ -14,6 +14,7 @@ builder.Services.AddSingleton<BuildingConfigurationService>();
 builder.Services.AddSingleton<RawTelemetryBatchService>();
 builder.Services.AddSingleton<AttachmentsForSensorsService>();
 builder.Services.AddSingleton<SensorDashboardAggregationService>();
+builder.Services.AddSingleton<TelemetryIngestionQueueService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
@@ -25,6 +26,7 @@ builder.Services.AddHttpClient("TimerApi", httpClient =>
 });
 
 builder.Services.AddHostedService<SimulatedTelemetryService>();
+builder.Services.AddHostedService<TelemetryProcessorService>();
 
 builder.Services.AddCors(options =>
 {
@@ -50,5 +52,6 @@ app.MapTelemetryPacketEndpoints();
 app.MapTelemetryBatchEndpoints();
 app.MapSensorAttachmentEndpoints();
 app.MapSensorDashboardEndpoints();
+app.MapStreamEndpoints();
 
 app.Run();
