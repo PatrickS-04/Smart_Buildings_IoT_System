@@ -17,13 +17,15 @@ namespace Backend_API.Services
         private readonly Dictionary<string, bool> _lastBoolValue = new();
 
         private readonly DeviceStateService _deviceStateService;
+        private readonly CommandService _commandService;
 
         public SimulatedTelemetryService(SensorRegistrationService sensorRegistrationService, IHttpClientFactory httpClientFactory, 
-            DeviceStateService deviceStateService)
+            DeviceStateService deviceStateService, CommandService commandService)
         {
             _sensorRegistrationService = sensorRegistrationService;
             _httpClientFactory = httpClientFactory;
             _deviceStateService = deviceStateService;
+            _commandService = commandService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -76,6 +78,7 @@ namespace Backend_API.Services
             "Motion (PIR)" or "Presence" => BoolRequest(sensorRegistrationDto, flipProbability: 0.15),
             "Door and Window Contacts" => BoolRequest(sensorRegistrationDto, flipProbability: 0.03),
             "Glass Break" or "Water Leak" or "Smoke and Fire" => BoolRequest(sensorRegistrationDto, flipProbability: 0.02),
+            "Smart Relay" or "Water Pump" or "Valve" or "Ventilation Fan" => ActuatorRequest(sensorRegistrationDto),
             _ => null
         };
 
@@ -139,7 +142,18 @@ namespace Backend_API.Services
                 TelemetryValue = TelemetryValue.Bool,
                 BoolValue = currentBoolValue
             };
+        }
 
+        private TelemetryIngestionRequest ActuatorRequest(SensorRegistrationDto sensorRegistrationDto)
+        {
+            return new TelemetryIngestionRequest
+            {
+                DeviceMacAddress = sensorRegistrationDto.DeviceMacAddress,
+                MetricName = sensorRegistrationDto.SensorType,
+                Unit = "",
+                TelemetryValue = TelemetryValue.Bool,
+                BoolValue = _commandService.GetStateOfCommand(sensorRegistrationDto.DeviceMacAddress)
+            };
         }
     }
 }
