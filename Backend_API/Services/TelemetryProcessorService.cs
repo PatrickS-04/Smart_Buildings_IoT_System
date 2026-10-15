@@ -76,7 +76,7 @@ namespace Backend_API.Services
         private void UpdateAlerts(SensorRegistrationDto sensor, LiveDeviceDto state)
         {
             var deviceMac = sensor.DeviceMacAddress;
-            var location = LocationOf(sensor);
+            var location = SensorLocation.Format(sensor);
             var description = $"{sensor.SensorType} reading ({FormatValue(state)})";
 
             _alertStateService.Resolve(deviceMac, "OFFLINE", sensor.SensorType, location);
@@ -122,15 +122,10 @@ namespace Backend_API.Services
                     _deviceStateService.MarkOffline(device.DeviceMacAddress);
 
                     _alertStateService.TryActivate(device.DeviceMacAddress, "OFFLINE", sensor.SensorType, 
-                        LocationOf(sensor), $"No data received for {silentFor.TotalSeconds:0}s");
+                        SensorLocation.Format(sensor), $"No data received for {silentFor.TotalSeconds:0}s");
                 }
             }
         }
-
-        private static string LocationOf(SensorRegistrationDto sensor) =>
-            string.IsNullOrWhiteSpace(sensor.RoomOrArea)
-            ? $"{sensor.SubZone}, {sensor.Floor}"
-            : $"{sensor.SubZone}, {sensor.Floor}, {sensor.RoomOrArea}";
 
         private static string FormatValue(LiveDeviceDto state) => state.LastValue switch
         {
