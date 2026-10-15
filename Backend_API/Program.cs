@@ -18,6 +18,7 @@ builder.Services.AddSingleton<TelemetryIngestionQueueService>();
 builder.Services.AddSingleton<DeviceStateService>();
 builder.Services.AddSingleton<TelemetryHistoryService>();
 builder.Services.AddSingleton<AlertStateService>();
+builder.Services.AddSingleton<CommandService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
@@ -56,5 +57,6 @@ app.MapTelemetryBatchEndpoints();
 app.MapSensorAttachmentEndpoints();
 app.MapSensorDashboardEndpoints();
 app.MapStreamEndpoints();
+app.MapCommandEndpoints();
 
 app.Run();
