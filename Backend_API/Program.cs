@@ -58,5 +58,6 @@ app.MapSensorAttachmentEndpoints();
 app.MapSensorDashboardEndpoints();
 app.MapStreamEndpoints();
 app.MapCommandEndpoints();
+app.MapSearchEndpoints();
 
 app.Run();
