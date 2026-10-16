@@ -423,7 +423,7 @@
             "Microsoft.NET.Sdk.WebAssembly.Pack": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.11, )",
+              "version": "[10.0.12, )",
               "autoReferenced": true
             }
           },
@@ -440,8 +440,12 @@
           "warn": true,
           "downloadDependencies": [
             {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[10.0.12, 10.0.12]"
+            },
+            {
               "name": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-              "version": "[10.0.11, 10.0.11]"
+              "version": "[10.0.12, 10.0.12]"
             }
           ],
           "frameworkReferences": {
