@@ -12,12 +12,19 @@ namespace Backend_API.Endpoints
             // This endpoint would be GET /api/search/devices?text=&category=&alertState=&mainZone=limit=
             group.MapGet("/devices", (
                 DeviceStateService deviceStateService,
+                ActivityTrackerService activityTracker,
                 string? text,
                 string? category,
                 string? alertState,
                 string? mainZone,
-                int? limit) =>
+                int? limit,
+                bool? track) =>
             {
+                if (track == true)
+                {
+                    activityTracker.RecordSearch(text, category, alertState, mainZone);
+                }
+
                 var allDevices = deviceStateService.GetAll();
 
                 var counts = AlertStates.AllAlertStates.ToDictionary(
