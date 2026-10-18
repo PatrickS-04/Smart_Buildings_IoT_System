@@ -325,6 +325,112 @@
     flex: 1;
 }
 
+.forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+}
+
+.forecast-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+}
+
+.forecast-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.forecast-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.forecast.actuator-meta {
+    margin: 0.15rem 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.forecast-now {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+}
+
+.trend {
+    font-size: 0.75rem;
+}
+
+.trend-rising {
+    color: var(--status-warn);
+}
+
+.trend-falling {
+    color: var(--accent);
+}
+
+.trend-steady {
+    color: var(--text-muted);
+}
+
+.trend-warning {
+    background: rgba(245, 166, 35, 0.12);
+    color: var(--status-warn);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+    margin: 0 0 0.75rem;
+}
+
+.prediction {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.prediction-when {
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.conf {
+    font-size: 0.74rem;
+    font-family: var(--font-mono);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+}
+
+.conf-high {
+    color: var(--status-ok);
+    background: var(--accent-dim);
+}
+
+.conf-medium {
+    color: var(--text-muted);
+    background: rgba(245, 166, 35, 0.14);
+}
+
+.conf-low {
+    color: var(--text-muted);
+    background: rgba(148, 163, 184, 0.16);
+}
+
+.insight {
+    margin: 0.75rem 0 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
 @media (max-width: 900px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
