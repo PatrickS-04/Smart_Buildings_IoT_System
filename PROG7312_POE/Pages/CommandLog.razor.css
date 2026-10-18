@@ -431,6 +431,58 @@
     color: var(--text-muted);
 }
 
+.suggestion-cols h3 {
+    margin-top: 0;
+}
+
+.suggestion-list, .insight-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.suggestion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.suggestion-title {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.suggestion-detail {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.insight-item {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    border-left: 3px solid var(--border-strong);
+    background: var(--bg-base);
+}
+
+.insight-info {
+    border-left-color: var(--accent);
+}
+
+.insight-warn {
+    border-left-color: var(--status-warn);
+}
+
+.insight-critical {
+    border-left-color: var(--status-critical);
+}
+
 @media (max-width: 900px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
