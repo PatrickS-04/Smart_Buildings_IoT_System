@@ -19,6 +19,7 @@ builder.Services.AddSingleton<DeviceStateService>();
 builder.Services.AddSingleton<TelemetryHistoryService>();
 builder.Services.AddSingleton<AlertStateService>();
 builder.Services.AddSingleton<CommandService>();
+builder.Services.AddSingleton<EpisodeDetectionService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
@@ -59,5 +60,6 @@ app.MapSensorDashboardEndpoints();
 app.MapStreamEndpoints();
 app.MapCommandEndpoints();
 app.MapSearchEndpoints();
+app.MapAnalyticsEndpoints();
 
 app.Run();
