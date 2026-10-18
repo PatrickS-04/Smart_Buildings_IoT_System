@@ -33,10 +33,6 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/patri/OneDrive/Desktop/3rd Year Projects/prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick/PROG7312_POE/Pages/CommandLog.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ29tbWFuZExvZy5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/patri/OneDrive/Desktop/3rd Year Projects/prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick/PROG7312_POE/Pages/MeshNetwork.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTWVzaE5ldHdvcmsucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
@@ -56,6 +52,10 @@ build_metadata.AdditionalFiles.CssScope = b-xk8t5wy6lc
 [C:/Users/patri/OneDrive/Desktop/3rd Year Projects/prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick/PROG7312_POE/Layout/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-bf3s7thvlt
+
+[C:/Users/patri/OneDrive/Desktop/3rd Year Projects/prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick/PROG7312_POE/Pages/CommandLog.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ29tbWFuZExvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-n8ycanuxnp
 
 [C:/Users/patri/OneDrive/Desktop/3rd Year Projects/prog7312-group2-2026-prog7312-poe-part-1-st10440987-patrick/PROG7312_POE/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==

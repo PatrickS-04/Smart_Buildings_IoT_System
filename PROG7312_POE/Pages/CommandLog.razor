@@ -1,3 +1,519 @@
 ﻿@page "/commandlog"
+@implements IDisposable
+@inject HttpClient Http
+@inject AppStateService AppStateService
+@using System.Text.Json
+@using PROG7312_POE.Services
+@using PROG7312_POE.Shared
+@using PROG7312_POE.Shared.DTOs
 
-Disabled - To be implemented in Part 2
+<PageTitle>Command Stream and History</PageTitle>
+
+<div class="stream">
+    <h1>Command Stream and History</h1>
+
+    @if (_queue is null && _search is null)
+    {
+        <p class="empty-state">Connecting to the live stream...</p>
+    }
+
+    <section class="kpi-grid" aria-label="Ingestion queue">
+        <div class="kpi-card">
+            <p class="kpi-label">Critical queue</p>
+            <p class="kpi-value @(_queue?.DepthOfCriticalQueue > 0 ? "kpi-critical" : "")">@(_queue?.DepthOfCriticalQueue ?? 0)</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Standard queue</p>
+            <p class="kpi-value">@(_queue?.DepthOfStandardQueue ?? 0)</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Processed Packets</p>
+            <p class="kpi-value">@((_queue?.TotalProcessed ?? 0).ToString("No"))</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Critical Packets</p>
+            <p class="kpi-value">@((_queue?.TotalCriticalEnqueued ?? 0).ToString("No"))</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Live Devices</h2>
+
+        <div class="filter-row">
+            <div class="filter-field filter-wide">
+                <label for="searchText">Search</label>
+                <input id="searchText" class="form-control" placeholder="MAC Address, Sensor Type, Sub-Zone or Room/Area"
+                    @bind="SearchText" @bind:event="oninput" @bind:after="RefreshSearchAsync" />
+            </div>
+
+            <div class="filter-field">
+                <label for="categoryFilter">Category</label>
+                <select id="categoryFilter" class="form-control" @bind="CategoryFilter" @bind:after="RefreshSearchAsync">
+                    <option value="">All Categories</option>
+                    @foreach (var category in SensorCategorization.SensorCategories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="zoneFilter">Main Zone</label>
+                <select id="zoneFilter" class="form-control" @bind="ZoneFilter" @bind:after="RefreshSearchAsync">
+                    <option value="">All Zones</option>
+                    @foreach (var mainZone in SensorCategorization.MainZones)
+                    {
+                        <option value="@mainZone">@mainZone</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="state-chips">
+            <button type="button" class="chip @(AlertStateFilter == "" ? "chip-active" : "")" @onclick='() => SetAlertStateAsync("")'>
+                All <span class="chip-count">@(_search?.TotalDevices ?? 0)</span>
+            </button>
+
+            @foreach (var state in AlertStates.AllAlertStates)
+            {
+                var chosen = state;
+                <button type="button" class="sensor-status-chip chip-@chosen @(AlertStateFilter == chosen ? "chip-active" : "")" 
+                    @onclick="() => SetAlertStateAsync(chosen)">
+                    @StateLabel(chosen) <span class="chip-count">@CountFor(chosen)</span>
+                </button>
+            }
+        </div>
+
+        @if (_search is null || _search.Devices.Count == 0)
+        {
+            <p class="empty-state">No devices match these filters</p>
+        }
+        else
+        {
+            <p class="result-note">Showing @_search.Devices.Count of @_search.TotalMatches matching devices</p>
+            <div class="table-wrap">
+                <table class="device-table">
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>Device</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                            <th>Last Value</th>
+                            <th>Last Seen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var device in _search.Devices)
+                        {
+                            <tr>
+                                <td><span class="state-badge state-@StateOf(device)">@StateLabel(StateOf(device))</span></td>
+                                <td class="mono">@device.DeviceMacAddress</td>
+                                <td>@device.SensorType</td>
+                                <td>@device.SubZone : @device.Floor - @device.RoomOrArea</td>
+                                <td class="mono">@FormatValue(device)</td>
+                                <td class="mono">@LocalTime(device.LastSeen)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <div class="two-col">
+        <section class="panel">
+            <h2>Manual Overrides</h2>
+
+            @if (!string.IsNullOrEmpty(_feedback))
+            {
+                <p class="invalid-feedback @(_feedbackIsError ? "feedback-error" : "feedback-ok")">@_feedback</p>
+            }
+
+            <div class="undo-row">
+                <button type="button" class="btn btn-undo" disabled="@(_busy || _commandHistory is null || _commandHistory.UndoStack.Count == 0)" 
+                    @onclick="UndoAsync"> Undo last command
+                </button>
+                
+                <span class="undo-hint">
+                    @if (_commandHistory is null || _commandHistory.UndoStack.Count == 0)
+                    {
+                        <text>Nothing to undo</text>
+                    }
+                    else
+                    {
+                        <text>Next: @_commandHistory.UndoStack[0].Description</text>
+                    }
+                </span>
+            </div>
+
+            <h3>Bulk Command</h3>
+            <div class="bulk-row">
+                <select class="form-control" @bind="_bulkType" aria-label="Device type">
+                    @foreach (var type in ActuatorTypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+
+                <select class="form-control" @bind="_bulkZone" aria-label="Zone">
+                    <option value="">Whole Building</option>
+                    @foreach (var zone in SensorCategorization.MainZones)
+                    {
+                        <option value="@zone">@zone</option>
+                    }
+                </select>
+
+                <button type="button" class="btn btn-on" disabled="@_busy" @onclick="() => BulkAsync(true)">All On</button>
+                <button type="button" class="btn btn-off" disabled="@_busy" @onclick="() => BulkAsync(false)">All Off</button>
+            </div>
+
+            <h3>Devices</h3>
+            @if (_actuators.Count == 0)
+            {
+                <p class="empty-state">No controllable devices are registered. Register a water pump, smart relay, valve or venitlation fan under Actuators and Controls Category</p>
+            }
+            else
+            {
+                <ul class="actuator-list">
+                    @foreach (var actuator in _actuators)
+                    {
+                        <li class="actuator-item">
+                            <div class="actuator-info">
+                                <p class="actuator-title">@actuator.SensorType <span class="mono muted">@actuator.DeviceMacAddress</span></p>
+                                <p class="actuator-meta">@actuator.Location</p>
+                                <p class="actuator-meta">
+                                    Commanded <strong>@(actuator.CommandedOn ? "ON" : "OFF")</strong>
+                                    - Reported <strong>@(actuator.ReportedOn is null ? "waiting" : actuator.ReportedOn.Value ? "ON" : "OFF")</strong>
+                                </p>
+                            </div>
+
+                            <div class="actuator-buttons">
+                                <button type="button" class="btn btn-on" disabled="@(_busy || actuator.CommandedOn)" @onclick="() => SingleAsync(actuator, true)">On</button>
+                                <button type="button" class="btn btn-off" disabled="@(_busy || !actuator.CommandedOn)" @onclick="() => SingleAsync(actuator, false)">Off</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="panel">
+            <h2>Active alerts</h2>
+            
+            @if (_alerts is null || _alerts.ActiveAlertKeys.Count == 0)
+            {
+                <p class="empty-state">No active alerts</p>
+            }
+            else
+            {
+                <ul class="alert-keys">
+                    @foreach (var key in _alerts.ActiveAlertKeys)
+                    {
+                        var parts = key.Split('|');
+                        <li><span class="state-badge state-@AlertKindClass(parts.Last())">@parts.Last()</span> <span class="mono">@parts.First()</span></li>
+                    }
+                </ul>
+            }
+
+            @if (_alerts is not null)
+            {
+                <p class="result-note">Duplicate alerts suppressed: @_alerts.DuplicatesSuppressed</p>
+            }
+
+            <h3>Alert events</h3>
+
+            @if (_alerts is null || _alerts.RecentEvents.Count == 0)
+            {
+                <p class="empty-state">No alert events yet</p>
+            }
+            else
+            {
+                <ul class="event-list">
+                    @foreach (var alertEvent in _alerts.RecentEvents.Take(12))
+                    {
+                        <li class="event-item">
+                            <span class="mono muted">@LocalTime(alertEvent.TimeStamp)</span>
+                            <span class="event-text">
+                                @(alertEvent.IsResolution ? "Resolved" : alertEvent.Kind): @alertEvent.SensorType
+                                <span class="muted">- @alertEvent.Location</span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="two-col">
+        <section class="panel">
+            <h2>Undo Stack</h2>
+
+            @if (_commandHistory is null || _commandHistory.UndoStack.Count == 0)
+            {
+                <p class="empty-state">The stack is empty</p>
+            }
+            else
+            {
+                <ol class="stack-list">
+                    @foreach (var commandRecord in _commandHistory.UndoStack)
+                    {
+                        <li>
+                            <span class="mono muted">@LocalTime(commandRecord.TimeStamp)</span>
+                            @commandRecord.Description <span class="muted">
+                                (@commandRecord.Changes.Count device@(commandRecord.Changes.Count == 1 ? "" : "s"))</span>
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+
+        <section class="panel">
+            <h2>Command History</h2>
+
+            @if (_commandHistory is null || _commandHistory.CommandLog.Count == 0)
+            {
+                <p class="empty-state">No commands have been sent yet</p>
+            }
+            else
+            {
+                <ul class="event-list">
+                    @foreach (var commandEntry in _commandHistory.CommandLog.Take(30))
+                    {
+                        <li class="event-item">
+                            <span class="mono muted">@LocalTime(commandEntry.TimeStamp)</span>
+                            <span class="event-text">
+                                <span class="kind-badge kind-@commandEntry.Kind.ToLower()">@commandEntry.Kind</span>
+                                @commandEntry.Description
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <section class="panel">
+        <h2>Processing Order</h2>
+        
+        <p class="result-note">The last packets taken off the queues, newest first. Critical packets jump the line.</p>
+
+        @if (_queue is null || _queue.ProcessedRecently.Count == 0)
+        {
+            <p class="empty-state">Nothing processed yet</p>
+        }
+        else
+        {
+            <ul class="event-list">
+                @foreach (var packet in _queue.ProcessedRecently.AsEnumerable().Reverse().Take(15))
+                {
+                    <li class="event-item">
+                        <span class="mono muted">#@packet.Sequence</span>
+                        <span class="event-text">
+                            @if (packet.WasCritical)
+                            {
+                                <span class="kind-badge kind-critical">CRITICAL</span>
+                            }
+
+                            <span class="mono">@packet.DeviceMacAddress</span> - @packet.MetricName
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+
+@code {
+    private StatsQueueDto? _queue;
+    private DeviceSearchResultDto? _search;
+    private AlertSnapshotDto? _alerts;
+    private CommandHistoryDto? _commandHistory;
+    private List<ActuatorDto> _actuators = new();
+
+    private PeriodicTimer? _timer;
+    private bool _busy;
+    private string _feedback = string.Empty;
+    private bool _feedbackIsError;
+
+    private string _bulkType = string.Empty;
+    private string _bulkZone = string.Empty;
+
+    private string SearchText { get => AppStateService.SearchText; set => AppStateService.SearchText = value; }
+    private string CategoryFilter { get => AppStateService.CategoryFilter; set => AppStateService.CategoryFilter = value; }
+    private string AlertStateFilter { get => AppStateService.AlertStateFilter; set => AppStateService.AlertStateFilter = value; }
+    private string ZoneFilter { get => AppStateService.ZoneFilter; set => AppStateService.ZoneFilter = value; }
+
+    private static string[] ActuatorTypes =>
+        SensorCategorization.SensorTypesByCategory[SensorCategorization.ActuatorCategory];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bulkType = ActuatorTypes.FirstOrDefault() ?? string.Empty;
+
+        await RefreshAllAsync();
+
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        _ = PollLoopAsync();
+    }
+
+    private async Task PollLoopAsync()
+    {
+        while (_timer is not null && await _timer.WaitForNextTickAsync())
+        {
+            await RefreshAllAsync();
+        }
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        await Task.WhenAll(
+            RefreshSearchAsync(),
+            LoadAsync<StatsQueueDto>("api/stream/queue-stats", value => _queue = value),
+            LoadAsync<AlertSnapshotDto>("api/stream/alerts", value => _alerts = value),
+            LoadAsync<CommandHistoryDto>("api/commands/history", value => _commandHistory = value),
+            LoadAsync<List<ActuatorDto>>("api/commands/actuators", value => _actuators = value ?? new()));
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync<T>(string url, Action<T?> assign)
+    {
+        try
+        {
+            assign(await Http.GetFromJsonAsync<T>(url));
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to load {url}: {exception.Message}");
+        }
+    }
+
+    private async Task RefreshSearchAsync()
+    {
+        var query = $"api/search/devices?text={Uri.EscapeDataString(SearchText)}" +
+            $"&category={Uri.EscapeDataString(CategoryFilter)}" +
+            $"&alertState={Uri.EscapeDataString(AlertStateFilter)}" +
+            $"&zone={Uri.EscapeDataString(ZoneFilter)}";
+
+        await LoadAsync<DeviceSearchResultDto>(query, value => _search = value);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SetAlertStateAsync(string alertState)
+    {
+        AlertStateFilter = alertState;
+        await RefreshSearchAsync();
+    }
+
+    private Task SingleAsync(ActuatorDto actuator, bool turnOn) =>
+        SendAsync("api/commands", new CommandRequestDto { DeviceMacAddress = actuator.DeviceMacAddress, TurnOn = turnOn });
+
+    private Task BulkAsync(bool turnOn) =>
+        SendAsync("api/commands/bulk", new BulkCommandRequestDto { SensorType = _bulkType, MainZone = _bulkZone, TurnOn = turnOn });
+
+    private Task UndoAsync() => SendAsync("api/commands/undo", null, "Undone: ");
+
+    private async Task SendAsync(string url, object? body, string prefix = "")
+    {
+        _busy = true;
+        _feedback = string.Empty;
+
+        try
+        {
+            var response = body is null ? await Http.PostAsync(url, null)
+                : await Http.PostAsJsonAsync(url, body);
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _feedbackIsError = true;
+                _feedback = json.TryGetProperty("error", out var error) ? error.GetString() ?? "Command failed" : "Command failed";
+            }
+            else if (json.TryGetProperty("message", out var message))
+            {
+                _feedbackIsError = false;
+                _feedback = message.GetString() ?? string.Empty;
+            }
+            else
+            {
+                _feedbackIsError = false;
+                _feedback = prefix + (json.TryGetProperty("description", out var description) ? description.GetString() : "Command Sent");
+            }
+        }
+        catch (Exception exception)
+        {
+            _feedbackIsError = true;
+            _feedback = $"Could not reach the server: {exception.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshAllAsync();
+    }
+
+    private int CountFor(string state) =>
+        _search is not null && _search.CountsByAlertState.TryGetValue(state, out var count) ? count : 0;
+
+    private static string StateOf(LiveDeviceDto device)
+    {
+        if (!device.IsOnline)
+        {
+            return AlertStates.Offline;
+        }
+
+        return device.Severity switch
+        {
+            "critical" => AlertStates.Critical,
+            "warn" => AlertStates.Warning,
+            _ => AlertStates.Normal
+        };
+    }
+
+    private static string StateLabel(string state) => state switch
+    {
+        AlertStates.Critical => "Critical",
+        AlertStates.Offline => "Offline",
+        AlertStates.Warning => "Warning",
+        _ => "Normal"
+    };
+
+    private static string AlertKindClass(string kind) => kind switch
+    {
+        "CRITICAL" => AlertStates.Critical,
+        "OFFLINE" => AlertStates.Offline,
+        _ => AlertStates.Warning
+    };
+
+    private static string FormatValue(LiveDeviceDto device)
+    {
+        var isActuator = device.Category == SensorCategorization.ActuatorCategory;
+
+        if (device.LastValue is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind switch
+            {
+                JsonValueKind.Number => $"{jsonElement.GetDouble():0.##} {device.Unit}".Trim(),
+                JsonValueKind.True => isActuator ? "On" : "Triggered",
+                JsonValueKind.False => isActuator ? "Off" : "Clear",
+                _ => jsonElement.ToString()
+            };
+        }
+
+        return device.LastValue?.ToString() ?? "-";
+    }
+
+    private static string LocalTime(DateTime utc) =>
+        DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("HH:mm:ss");
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}
