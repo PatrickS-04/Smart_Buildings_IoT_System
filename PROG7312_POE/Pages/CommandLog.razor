@@ -40,18 +40,78 @@
     </section>
 
     <section class="panel">
+        <h2>Suggested actions and automated insights</h2>
+        <p class="result-note">
+            Learned from your own activity: @(_suggestions?.TrackedSearches ?? 0) searches and @(_suggestions?.TrackedCommands ?? 0) commands recorded so far.
+        </p>
+
+        <div class="two-col suggestion-cols">
+            <div>
+                <h3>Suggested actions</h3>
+                @if (_suggestions is null || _suggestions.SuggestedActions.Count == 0)
+                {
+                    <p class="empty-state">No suggestions yet. They appear once you repeat a search or a command.</p>
+                }
+                else
+                {
+                    <ul class="suggestion-list">
+                        @foreach (var suggestion in _suggestions.SuggestedActions)
+                        {
+                            <li class="suggestion">
+                                <div class="suggestion-body">
+                                    <p class="suggestion-title">
+                                        <span class="state-badge @ReasonClass(suggestion.Reason)">@ReasonLabel(suggestion.Reason)</span>
+                                        @suggestion.Title
+                                    </p>
+                                    <p class="suggestion-detail">@suggestion.Detail</p>
+                                </div>
+
+                                @if (suggestion.ActionType == "applyFilter")
+                                {
+                                    <button type="button" class="btn btn-on" @onclick="() => ApplyViewAsync(suggestion)">Apply view</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-on" disabled="@_busy" @onclick="() => RunSuggestionAsync(suggestion)">Run now</button>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div>
+                <h3>Automated insights</h3>
+                @if (_suggestions is null || _suggestions.Insights.Count == 0)
+                {
+                    <p class="empty-state">No insights yet.</p>
+                }
+                else
+                {
+                    <ul class="insight-list">
+                        @foreach (var insight in _suggestions.Insights)
+                        {
+                            <li class="insight-item insight-@insight.Severity">@insight.Message</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
         <h2>Live Devices</h2>
 
         <div class="filter-row">
             <div class="filter-field filter-wide">
                 <label for="searchText">Search</label>
                 <input id="searchText" class="form-control" placeholder="MAC Address, Sensor Type, Sub-Zone or Room/Area"
-                    @bind="SearchText" @bind:event="oninput" @bind:after="RefreshSearchAsync" />
+                    @bind="SearchText" @bind:event="oninput" @bind:after="UserSearchAsync" />
             </div>
 
             <div class="filter-field">
                 <label for="categoryFilter">Category</label>
-                <select id="categoryFilter" class="form-control" @bind="CategoryFilter" @bind:after="RefreshSearchAsync">
+                <select id="categoryFilter" class="form-control" @bind="CategoryFilter" @bind:after="UserSearchAsync">
                     <option value="">All Categories</option>
                     @foreach (var category in SensorCategorization.SensorCategories)
                     {
@@ -62,7 +122,7 @@
 
             <div class="filter-field">
                 <label for="zoneFilter">Main Zone</label>
-                <select id="zoneFilter" class="form-control" @bind="ZoneFilter" @bind:after="RefreshSearchAsync">
+                <select id="zoneFilter" class="form-control" @bind="ZoneFilter" @bind:after="UserSearchAsync">
                     <option value="">All Zones</option>
                     @foreach (var mainZone in SensorCategorization.MainZones)
                     {
@@ -391,6 +451,7 @@
     private CommandHistoryDto? _commandHistory;
     private List<ActuatorDto> _actuators = new();
     private List<SensorForecastDto> _sensorForecasts = new();
+    private SuggestionsDto? _suggestions;
 
     private PeriodicTimer? _timer;
     private bool _busy;
@@ -434,7 +495,8 @@
             LoadAsync<AlertSnapshotDto>("api/stream/alerts", value => _alerts = value),
             LoadAsync<CommandHistoryDto>("api/commands/history", value => _commandHistory = value),
             LoadAsync<List<ActuatorDto>>("api/commands/actuators", value => _actuators = value ?? new()),
-            LoadAsync<List<SensorForecastDto>>("api/analytics/forecast", value => _sensorForecasts = value ?? new()));
+            LoadAsync<List<SensorForecastDto>>("api/analytics/forecast", value => _sensorForecasts = value ?? new()),
+            LoadAsync<SuggestionsDto>("api/suggestions", value => _suggestions = value));
 
         await InvokeAsync(StateHasChanged);
     }
@@ -451,21 +513,42 @@
         }
     }
 
-    private async Task RefreshSearchAsync()
+    private async Task RefreshSearchAsync(bool track = false)
     {
         var query = $"api/search/devices?text={Uri.EscapeDataString(SearchText)}" +
             $"&category={Uri.EscapeDataString(CategoryFilter)}" +
             $"&alertState={Uri.EscapeDataString(AlertStateFilter)}" +
-            $"&zone={Uri.EscapeDataString(ZoneFilter)}";
+            $"&zone={Uri.EscapeDataString(ZoneFilter)}" +
+            $"&track={track.ToString().ToLower()}";
 
         await LoadAsync<DeviceSearchResultDto>(query, value => _search = value);
         await InvokeAsync(StateHasChanged);
     }
 
+    private Task UserSearchAsync() => RefreshSearchAsync(true);
+
+    private async Task ApplyViewAsync(SuggestedActionDto suggestion)
+    {
+        SearchText = suggestion.FilterText;
+        CategoryFilter = suggestion.FilterCategory;
+        AlertStateFilter = suggestion.FilterAlertState;
+        ZoneFilter = suggestion.FilterZone;
+
+        await RefreshSearchAsync(true);
+    }
+
+    private Task RunSuggestionAsync(SuggestedActionDto suggestion) =>
+    SendAsync("api/commands/bulk", new BulkCommandRequestDto
+        {
+            SensorType = suggestion.SensorType,
+            MainZone = suggestion.MainZone,
+            TurnOn = suggestion.TurnOn
+        });
+
     private async Task SetAlertStateAsync(string alertState)
     {
         AlertStateFilter = alertState;
-        await RefreshSearchAsync();
+        await RefreshSearchAsync(true);
     }
 
     private Task SingleAsync(ActuatorDto actuator, bool turnOn) =>
@@ -608,6 +691,21 @@
         var untilEnd = prediction.CrrentExpectedEnd is null ? 0 : Math.Max(0, SecondsUntil(prediction.CrrentExpectedEnd.Value));
         return $"in progress, ends in ~{FormatSeconds(untilEnd)}. Next {next}";
     }
+
+    private static string ReasonLabel(string reason) => reason switch
+    {
+        "active" => "Active now",
+        "predicted" => "Predicted",
+        "habit" => "Habit",
+        _ => "Your usual view"
+    };
+
+    private static string ReasonClass(string reason) => reason switch
+    {
+        "active" => "state-critical",
+        "predicted" => "state-warning",
+        _ => "state-normal"
+    };
 
     private static string LocalTime(DateTime utc) =>
         DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("HH:mm:ss");
