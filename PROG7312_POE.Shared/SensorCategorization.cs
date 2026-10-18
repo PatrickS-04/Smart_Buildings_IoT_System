@@ -6,6 +6,8 @@ namespace PROG7312_POE.Shared
 {
     public static class SensorCategorization
     {
+        public const string ActuatorCategory = "Actuators and Controls";
+
         public static readonly string[] MainZones =
         {
             "Occupied Spaces", "Amenities and Public Areas", "Technical and Utility",
@@ -24,7 +26,7 @@ namespace PROG7312_POE.Shared
 
         public static readonly string[] SensorCategories =
         {
-            "Environmental", "Occupancy and Motion", "Energy and Power Consumption", "Safety and Security", "Structural and Facility"
+            "Environmental", "Occupancy and Motion", "Energy and Power Consumption", "Safety and Security", "Structural and Facility", ActuatorCategory
         };
 
         public static readonly Dictionary<string, string[]> SensorTypesByCategory = new()
@@ -34,6 +36,7 @@ namespace PROG7312_POE.Shared
             ["Energy and Power Consumption"] = new[] { "Power Meters", "Energy Sub-meters", "Utility Meters" },
             ["Safety and Security"] = new[] { "Smoke and Fire", "Water Leak", "Door and Window Contacts", "Glass Break" },
             ["Structural and Facility"] = new[] { "Vibration", "Pipe Pressure" },
+            [ActuatorCategory] = new[] { "Smart Relay", "Water Pump", "Valve", "Ventilation Fan" }
         };
     }
 }

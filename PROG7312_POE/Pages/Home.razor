@@ -3,6 +3,8 @@
 @implements IDisposable
 @inject HttpClient HttpClient
 @using PROG7312_POE.Shared.DTOs
+@using PROG7312_POE.Services
+@inject AppStateService StateService
 
 <PageTitle>Sensor Dashboard</PageTitle>
 
@@ -149,8 +151,13 @@
     };
 
     private SensorDashboardDto? _snapshot;
-    private string _selectedZone = "";
     private PeriodicTimer? _liveTimer;
+
+    private string _selectedZone
+    {
+        get => StateService.SelectedZone;
+        set => StateService.SelectedZone = value;
+    }
 
     private readonly Dictionary<string, string> previousSeverityByDeviceMacAddress = new();
     private readonly List<AlertItem> RecentAlerts = new();

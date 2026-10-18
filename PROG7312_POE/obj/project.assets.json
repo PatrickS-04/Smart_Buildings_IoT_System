@@ -2,6 +2,16 @@
   "version": 4,
   "targets": {
     "net10.0": {
+      "Microsoft.AspNetCore.App.Internal.Assets/10.0.11": {
+        "type": "package",
+        "build": {
+          "build/Microsoft.AspNetCore.App.Internal.Assets.props": {},
+          "buildTransitive/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
+        },
+        "buildMultiTargeting": {
+          "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
+        }
+      },
       "Microsoft.AspNetCore.Authorization/10.0.11": {
         "type": "package",
         "dependencies": {
@@ -510,7 +520,7 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
+      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
@@ -529,6 +539,16 @@
       }
     },
     "net10.0/browser-wasm": {
+      "Microsoft.AspNetCore.App.Internal.Assets/10.0.11": {
+        "type": "package",
+        "build": {
+          "build/Microsoft.AspNetCore.App.Internal.Assets.props": {},
+          "buildTransitive/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
+        },
+        "buildMultiTargeting": {
+          "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
+        }
+      },
       "Microsoft.AspNetCore.Authorization/10.0.11": {
         "type": "package",
         "dependencies": {
@@ -1037,7 +1057,7 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
+      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
@@ -1057,6 +1077,29 @@
     }
   },
   "libraries": {
+    "Microsoft.AspNetCore.App.Internal.Assets/10.0.11": {
+      "sha512": "tYYYBZsuF2DSz1I3hcfB8qC4nNekIKufkYZOJ2R28fNK3PkS7fJao/mIX5H84NH94UACZQ4dhvt8GDlkrJFwLg==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.app.internal.assets/10.0.11",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "THIRD-PARTY-NOTICES.TXT",
+        "_framework/blazor.server.js",
+        "_framework/blazor.server.js.map",
+        "_framework/blazor.web.js",
+        "_framework/blazor.web.js.map",
+        "_framework/blazor.webassembly.js",
+        "_framework/blazor.webassembly.js.map",
+        "build/Microsoft.AspNetCore.App.Internal.Assets.props",
+        "build/Microsoft.AspNetCore.App.Internal.Assets.targets",
+        "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets",
+        "buildTransitive/Microsoft.AspNetCore.App.Internal.Assets.targets",
+        "microsoft.aspnetcore.app.internal.assets.10.0.11.nupkg.sha512",
+        "microsoft.aspnetcore.app.internal.assets.nuspec"
+      ]
+    },
     "Microsoft.AspNetCore.Authorization/10.0.11": {
       "sha512": "f4xzaXZSaMaXVtlIt/t3oVl8cHe61xAGSuXuduQ49TLglJPZ9vGUiOAdl1AbFbKXxnbRSURUzEYEplY/IhJVTg==",
       "type": "package",
@@ -2011,10 +2054,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
-      "sha512": "qTQsflEOjG1xG8FCfQJZbVd7DErJdKqKoW4gxH1HlgGQ5IBBloehLvXhMhzYqogYyajU7YEUKZvJ4n/vA7sAmQ==",
+    "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
+      "sha512": "MIeBVeWkbKdggl3kmmIUnx8ZNEgjD2m1gTN/0W+TDRn6zcL1WZdq5hXhGQ0wjuSlw/8tvwwCg79PemfkJ3+5JA==",
       "type": "package",
-      "path": "microsoft.net.sdk.webassembly.pack/10.0.11",
+      "path": "microsoft.net.sdk.webassembly.pack/10.0.12",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -2044,7 +2087,7 @@
         "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets",
         "build/Wasm.web.config",
         "build/browser.runtimeconfig.template.json",
-        "microsoft.net.sdk.webassembly.pack.10.0.11.nupkg.sha512",
+        "microsoft.net.sdk.webassembly.pack.10.0.12.nupkg.sha512",
         "microsoft.net.sdk.webassembly.pack.nuspec",
         "tools/net10.0/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll",
         "tools/net10.0/Microsoft.NET.WebAssembly.Webcil.dll",
@@ -2060,10 +2103,11 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.11",
       "Microsoft.AspNetCore.Components.WebAssembly >= 10.0.11",
       "Microsoft.AspNetCore.Components.WebAssembly.DevServer >= 10.0.11",
       "Microsoft.NET.ILLink.Tasks >= 10.0.11",
-      "Microsoft.NET.Sdk.WebAssembly.Pack >= 10.0.11",
+      "Microsoft.NET.Sdk.WebAssembly.Pack >= 10.0.12",
       "PROG7312_POE.Shared >= 1.0.0"
     ]
   },
@@ -2124,6 +2168,12 @@
         "framework": "net10.0",
         "targetAlias": "net10.0",
         "dependencies": {
+          "Microsoft.AspNetCore.App.Internal.Assets": {
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[10.0.11, )",
+            "autoReferenced": true
+          },
           "Microsoft.AspNetCore.Components.WebAssembly": {
             "target": "Package",
             "version": "[10.0.11, )"
@@ -2142,7 +2192,7 @@
           "Microsoft.NET.Sdk.WebAssembly.Pack": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[10.0.11, )",
+            "version": "[10.0.12, )",
             "autoReferenced": true
           }
         },
@@ -2159,8 +2209,12 @@
         "warn": true,
         "downloadDependencies": [
           {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[10.0.12, 10.0.12]"
+          },
+          {
             "name": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-            "version": "[10.0.11, 10.0.11]"
+            "version": "[10.0.12, 10.0.12]"
           }
         ],
         "frameworkReferences": {
