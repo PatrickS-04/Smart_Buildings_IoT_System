@@ -34,7 +34,8 @@ namespace Backend_API.Endpoints
             });
 
             group.MapPost("/", (CommandRequestDto commandRequest, SensorRegistrationService sensorRegistrationService,
-                CommandService commandService, TelemetryIngestionQueueService queueIngestionService) =>
+                CommandService commandService, TelemetryIngestionQueueService queueIngestionService,
+                ActivityTrackerService activityTracker, AlertStateService alerts, DeviceStateService deviceState) =>
             {
                 var sensor = sensorRegistrationService.GetSensorByMacAddress(commandRequest.DeviceMacAddress);
 
@@ -57,11 +58,13 @@ namespace Backend_API.Endpoints
                 }
 
                 Acknowledge(record, revert: false, queueIngestionService);
+                TrackCommand(activityTracker, alerts, deviceState, sensor.SensorType, sensor.MainZone, commandRequest.TurnOn);
                 return Results.Ok(record);
             });
 
             group.MapPost("/bulk", (BulkCommandRequestDto bulkCommandRequest, SensorRegistrationService sensorRegistrationService,
-                CommandService commandService, TelemetryIngestionQueueService ingestionQueueService) =>
+                CommandService commandService, TelemetryIngestionQueueService ingestionQueueService,
+                ActivityTrackerService activityTracker, AlertStateService alerts, DeviceStateService deviceState) =>
             {
                 var targets = sensorRegistrationService.GetAllSensors()
                     .Where(sensor => sensor.Category == SensorCategorization.ActuatorCategory
@@ -85,6 +88,7 @@ namespace Backend_API.Endpoints
                 }
 
                 Acknowledge(record, revert: false, ingestionQueueService);
+                TrackCommand(activityTracker, alerts, deviceState, bulkCommandRequest.SensorType, bulkCommandRequest.MainZone ?? string.Empty, bulkCommandRequest.TurnOn); ;
                 return Results.Ok(record);
             });
 
@@ -116,6 +120,21 @@ namespace Backend_API.Endpoints
                 var state = revert ? change.PreviousState : change.NewState;
                 ingestionQueueService.StandardEnqueue(new TelemetryPacketModel<bool>(change.DeviceMacAddress, change.SensorType, state, ""));
             }
+        }
+
+        private static void TrackCommand(ActivityTrackerService activityTracker, AlertStateService alerts, DeviceStateService deviceState,
+            string sensorType, string mainZone, bool turnOn)
+        {
+            var triggers = alerts.GetSnapshot().ActiveAlertKeys
+                .Select(key => key.Split('|'))
+                .Where(parts => parts.Length == 2 && parts[1] != "OFFLINE")
+                .Select(parts => deviceState.GetByMacAddress(parts[0])?.SensorType)
+                .Where(type => !string.IsNullOrEmpty(type))
+                .Select(type => type!)
+                .Distinct()
+                .ToList();
+
+            activityTracker.RecordCommand(sensorType, mainZone, turnOn, triggers);
         }
     }
 }
