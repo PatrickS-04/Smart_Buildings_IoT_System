@@ -124,6 +124,63 @@
         }
     </section>
 
+    <section class="panel">
+        <h2>Automated insights and predictions</h2>
+        <p class="result-note">Learnt from each sensor's own history of highs and lows, and updated as new readings arrive.</p>
+
+        @if (_sensorForecasts.Count == 0)
+        {
+            <p class="empty-state">No numeric sensor history yet. Register sensors and let them report, or call the backfill endpoint to load past data.</p>
+        }
+        else
+        {
+            <div class="forecast-grid">
+                @foreach (var forecast in _sensorForecasts)
+                {
+                    <article class="forecast-card">
+                        <header class="forecast-head">
+                            <div>
+                                <p class="forecast-title">@forecast.SensorType</p>
+                                <p class="forecast-meta">@forecast.Location</p>
+                            </div>
+
+                            <div class="forecast-now">
+                                <span class="mono">@FormatNumber(forecast.CurrentValue) @forecast.Unit</span>
+                                <span class="trend trend-@forecast.Trend">@TrendText(forecast.Trend)</span>
+                            </div>
+                        </header>
+
+                        @if (forecast.TrendWarning is not null)
+                        {
+                            <p class="trend-warning">
+                                If it keeps moving like this, it crosses the @forecast.TrendWarning.Kind limit
+                                (@FormatNumber(forecast.TrendWarning.Limit) @forecast.Unit) in about @FormatSeconds(forecast.TrendWarning.SecondsUntilLimitCrossed).
+                            </p>
+                        }
+
+                        @if (!forecast.HasEnoughData)
+                        {
+                            <p class="empty-state">Still learning this sensor. It needs at least five completed highs or lows.</p>
+                        }
+                        else
+                        {
+                            @foreach (var prediction in forecast.Predictions)
+                            {
+                                <div class="prediction">
+                                    <span class="state-badge state-@(prediction.Kind == "high" ? "critical" : "warning")">Next @prediction.Kind</span>
+                                    <span class="prediction-when">@WhenText(prediction)</span>
+                                    <span class="conf conf-@prediction.ConfidenceLabel.ToLower()">@prediction.ConfidencePercentage% @prediction.ConfidenceLabel</span>
+                                </div>
+                            }
+
+                            <p class="insight">@forecast.Insight</p>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
     <div class="two-col">
         <section class="panel">
             <h2>Manual Overrides</h2>
@@ -333,6 +390,7 @@
     private AlertSnapshotDto? _alerts;
     private CommandHistoryDto? _commandHistory;
     private List<ActuatorDto> _actuators = new();
+    private List<SensorForecastDto> _sensorForecasts = new();
 
     private PeriodicTimer? _timer;
     private bool _busy;
@@ -375,7 +433,8 @@
             LoadAsync<StatsQueueDto>("api/stream/queue-stats", value => _queue = value),
             LoadAsync<AlertSnapshotDto>("api/stream/alerts", value => _alerts = value),
             LoadAsync<CommandHistoryDto>("api/commands/history", value => _commandHistory = value),
-            LoadAsync<List<ActuatorDto>>("api/commands/actuators", value => _actuators = value ?? new()));
+            LoadAsync<List<ActuatorDto>>("api/commands/actuators", value => _actuators = value ?? new()),
+            LoadAsync<List<SensorForecastDto>>("api/analytics/forecast", value => _sensorForecasts = value ?? new()));
 
         await InvokeAsync(StateHasChanged);
     }
@@ -507,6 +566,47 @@
         }
 
         return device.LastValue?.ToString() ?? "-";
+    }
+
+    private static double SecondsUntil(DateTime utc) =>
+        (DateTime.SpecifyKind(utc, DateTimeKind.Utc) - DateTime.UtcNow).TotalSeconds;
+
+    private static string FormatNumber(double value) => value.ToString("0.##");
+
+    private static string FormatSeconds(double seconds)
+    {
+        if (seconds < 60)
+        {
+            return $"{seconds:0}s";
+        }
+
+        if (seconds < 3600)
+        {
+            return $"{(int)(seconds / 60)}m {(int)(seconds % 60):00}s";
+        }
+
+        return $"{(int)(seconds / 3600)}h {(int)(seconds % 3600 / 60)}m";
+    }
+
+    private static string TrendText(string trend) => trend switch
+    {
+        "rising" => "⬈ Rising",
+        "falling" => "⬊ Falling",
+        _ => "Steady"
+    };
+
+    private static string WhenText(PredictionDto prediction)
+    {
+        var untilNext = SecondsUntil(prediction.PredictedStart);
+        var next = untilNext <= 0 ? "any moment now" : $"in {FormatSeconds(untilNext)}";
+
+        if (!prediction.InProgress)
+        {
+            return next;
+        }
+
+        var untilEnd = prediction.CrrentExpectedEnd is null ? 0 : Math.Max(0, SecondsUntil(prediction.CrrentExpectedEnd.Value));
+        return $"in progress, ends in ~{FormatSeconds(untilEnd)}. Next {next}";
     }
 
     private static string LocalTime(DateTime utc) =>
