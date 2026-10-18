@@ -21,6 +21,8 @@ builder.Services.AddSingleton<AlertStateService>();
 builder.Services.AddSingleton<CommandService>();
 builder.Services.AddSingleton<EpisodeDetectionService>();
 builder.Services.AddSingleton<PredictionEngineService>();
+builder.Services.AddSingleton<ActivityTrackerService>();
+builder.Services.AddSingleton<SuggestionEngineService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
@@ -62,5 +64,6 @@ app.MapStreamEndpoints();
 app.MapCommandEndpoints();
 app.MapSearchEndpoints();
 app.MapAnalyticsEndpoints();
+app.MapSuggestionEndpoints();
 
 app.Run();
