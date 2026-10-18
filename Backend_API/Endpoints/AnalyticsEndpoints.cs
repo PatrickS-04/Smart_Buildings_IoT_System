@@ -25,6 +25,23 @@ namespace Backend_API.Endpoints
                 return Results.Ok(episodeDetector.GetAllEpisodes().Take(Math.Clamp(take ?? 30, 1, 200)));
             });
 
+            group.MapGet("/forecast/{deviceMacAddress}", (string deviceMacAddress, PredictionEngineService predictionEngine) =>
+            {
+                var forecast = predictionEngine.GetSensorForecast(deviceMacAddress);
+
+                if (forecast is null)
+                {
+                    return Results.NotFound(new { error = "That device is not registered, or it is not a sensor with numeric limits." });
+                }
+
+                return Results.Ok(forecast);
+            });
+
+            group.MapGet("/forecast", (PredictionEngineService predictionEngine) =>
+            {
+                return Results.Ok(predictionEngine.GetAllForecasts());
+            });
+
             group.MapPost("/test/backfill", (SensorRegistrationService sensorRegistrationService, TelemetryHistoryService historyService, int? minutes) =>
             {
                 var windowMinutes = Math.Clamp(minutes ?? 60, 10, 240);

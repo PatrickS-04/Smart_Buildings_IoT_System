@@ -20,6 +20,7 @@ builder.Services.AddSingleton<TelemetryHistoryService>();
 builder.Services.AddSingleton<AlertStateService>();
 builder.Services.AddSingleton<CommandService>();
 builder.Services.AddSingleton<EpisodeDetectionService>();
+builder.Services.AddSingleton<PredictionEngineService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
