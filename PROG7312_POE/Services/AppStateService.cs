@@ -1,6 +1,6 @@
 ﻿namespace PROG7312_POE.Services
 {
-    public record AlertItem(string Severity, string Title, string Location, string TimeAgo);
+    public record AlertItem(string Severity, string Title, string Location, DateTime AtUtc);
 
     public class AppStateService
     {
