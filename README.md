@@ -65,7 +65,7 @@ As per my Task 1 Research of Part 1 in which i chose the real-time visual teleme
 **Improvement of Design:**
 In my application, i have designed it that currently, the system could be used for 1 specific building and add all sensors in that particular building. I could improve this design if necessary to allow buildings to be the first entry rather than the current Main Zone entry. This improvement would then allow an organization or a group of investors who manage or own more than 1 building and want to use 1 application for their sensor monitoring across all their buildings. Having said this, they could still use the application as it is designed currently but would have several different instances of the application running to see each individual building. The improvement would allow 1 instance of the application for them to see all their buildings and the sensors for each building. This is just a more efficient improvement that could be made to the application.
 
-**Youtube Video Presentation Link:**
+**YouTube Video Presentation Link PART 1:**
 https://youtu.be/zTut_YZjuDE
 
 # PROG7312 POE Part 2 - Smart X System
@@ -113,3 +113,6 @@ To test it without waiting: call POST /api/analytics/test/backfill?minutes=60 (t
 Searches that the user makes themselves and every manual command are recorded, together with which sensor types were alerting when a command was sent. The engine then offers: your usual searches as one click views, commands that you repeat, and learnt responses, for example "when Temperature was alerting, you turned the ventilation fans on", which is suggested again when Temperature is alerting now or is predicted to alert within two minutes. These appear as Suggested Actions, next to Automated Insights such as the number of devices needing attention, the sensor type raising the most alerts and the next predicted events.
 
 To test it: choose a category in the device search, clear it and choose it again (do this at least 3 times), and an "Open your usual view" suggestion appears. For a learnt response call POST /api/suggestions/test/seed?trigger=Temperature&actuator=Ventilation Fan&turnOn=true, which records three past commands. Within a few minutes, when Temperature alerts or is predicted to alert, the suggestion "Turn all Ventilation Fan devices ON" appears and can be run with one click.
+
+**YouTube Video Presentation Link PART 2:**
+https://youtu.be/_0Pzg88R6Lk
