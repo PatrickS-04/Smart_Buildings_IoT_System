@@ -6,7 +6,7 @@ namespace Backend_API.Services
 {
     public class SensorDashboardAggregationService
     {
-        private static readonly TimeSpan OfflineThreshold = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan OfflineThreshold = TimeSpan.FromSeconds(35);
         private static readonly string[] TemperatureSeriesColors = { "#35d0b8", "#f5a623", "#ff6b6b", "#5b9dd9", "#9b8afb", "#e0607a" };
         private static readonly string[] PowerSensorTypes = { "Power Meters", "Energy Sub-meters", "Utility Meters" };
 
