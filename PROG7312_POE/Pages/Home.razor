@@ -3,6 +3,8 @@
 @implements IDisposable
 @inject HttpClient HttpClient
 @using PROG7312_POE.Shared.DTOs
+@using PROG7312_POE.Services
+@inject AppStateService StateService
 
 <PageTitle>Sensor Dashboard</PageTitle>
 
@@ -132,7 +134,7 @@
                                 <p class="alert-title">@alert.Title</p>
                                 <p class="alert-meta">@alert.Location</p>
                             </div>
-                            <span class="alert-time">@alert.TimeAgo</span>
+                            <span class="alert-time">@TimeAgo(alert.AtUtc)</span>
                         </li>
                     }
                 </ul>
@@ -149,13 +151,16 @@
     };
 
     private SensorDashboardDto? _snapshot;
-    private string _selectedZone = "";
     private PeriodicTimer? _liveTimer;
 
-    private readonly Dictionary<string, string> previousSeverityByDeviceMacAddress = new();
-    private readonly List<AlertItem> RecentAlerts = new();
+    private string _selectedZone
+    {
+        get => StateService.SelectedZone;
+        set => StateService.SelectedZone = value;
+    }
 
-    private record AlertItem(string Severity, string Title, string Location, string TimeAgo);
+    private Dictionary<string, string> previousSeverityByDeviceMacAddress => StateService.PreviousSeverityByMacAddress;
+    private List<AlertItem> RecentAlerts => StateService.RecentAlerts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -217,7 +222,7 @@
                             sensor.Severity,
                             $"{sensor.SensorType} {(sensor.Severity == "critical" ? "offline or fault" : "reading out of range")}",
                             $"{group.NameOfSubZone} · {ShortDeviceMacAddress(sensor.DeviceMacAddress)}",
-                            "Just now"
+                            DateTime.UtcNow
                         ));
                     }
                     else if (previousSeverity is "warn" or "critical")
@@ -226,7 +231,7 @@
                             "",
                             $"{sensor.SensorType} resolved",
                             $"{group.NameOfSubZone} · {ShortDeviceMacAddress(sensor.DeviceMacAddress)}",
-                            "Just now"
+                            DateTime.UtcNow
                         ));
                     }
 
@@ -269,6 +274,18 @@
         "critical" => "Offline",
         _ => "Online",
     };
+
+    private static string TimeAgo(DateTime atUtc)
+    {
+        var elapsed = DateTime.UtcNow - atUtc;
+
+        if (elapsed.TotalSeconds < 60)
+        {
+            return "Just Now";
+        }
+
+        return elapsed.TotalMinutes < 60 ? $"{(int)elapsed.TotalMinutes} min ago" : $"{(int)elapsed.TotalHours} hr ago";
+    }
 
     private static string ShortDeviceMacAddress(string deviceMacAddress) => deviceMacAddress.Length <= 6 ? deviceMacAddress : deviceMacAddress[^6..];
 

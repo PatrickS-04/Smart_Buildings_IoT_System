@@ -6,7 +6,7 @@ namespace Backend_API.Services
 {
     public class SensorDashboardAggregationService
     {
-        private static readonly TimeSpan OfflineThreshold = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan OfflineThreshold = TimeSpan.FromSeconds(35);
         private static readonly string[] TemperatureSeriesColors = { "#35d0b8", "#f5a623", "#ff6b6b", "#5b9dd9", "#9b8afb", "#e0607a" };
         private static readonly string[] PowerSensorTypes = { "Power Meters", "Energy Sub-meters", "Utility Meters" };
 
@@ -58,18 +58,8 @@ namespace Backend_API.Services
                 return "critical";
             }
 
-            return sensorRegistrationDto.SensorType switch
-            {
-                "Smoke and Fire" or "Glass Break" or "Water Leak" => (bool)latestTelemetryPacket.ValueAsAnObject ? "critical" : "",
-                "Door and Window Contacts" => (bool)latestTelemetryPacket.ValueAsAnObject ? "warn" : "",
-                "Temperature" => IsOutOfRange((float)latestTelemetryPacket.ValueAsAnObject, 18, 27) ? "warn" : "",
-                "CO2 (Carbon Dioxide)" => (float)latestTelemetryPacket.ValueAsAnObject > 1000 ? "warn" : "",
-                "Humidity" => IsOutOfRange((float)latestTelemetryPacket.ValueAsAnObject, 30, 60) ? "warn" : "",
-                _ => ""
-            };
+            return SensorSeverityEvaluator.EvaluateSeverity(sensorRegistrationDto.SensorType, latestTelemetryPacket.ValueAsAnObject);
         }
-
-        private static bool IsOutOfRange(float value, float min, float max) => value < min || value > max;
 
         private double LatestAverage(List<SensorRegistrationDto> registeredSensors, Dictionary<string,
             ITelemetryPacketModel?> latestReadingBySensor, string sensorType)
@@ -191,11 +181,15 @@ namespace Backend_API.Services
 
             return telemetryPacket.ValueAsAnObject switch
             {
+                bool boolean when IsActuator(telemetryPacket.MetricName) => boolean ? "On" : "Off",
                 bool boolean => boolean ? "Yes" : "No",
                 float f => $"{f:0.#} {telemetryPacket.Unit}".Trim(),
                 int integer => $"{integer} {telemetryPacket.Unit}".Trim(),
                 _ => telemetryPacket.ValueAsAnObject.ToString() ?? ""
             };
         }
+
+        private static bool IsActuator(string sensorType) =>
+            SensorCategorization.SensorTypesByCategory[SensorCategorization.ActuatorCategory].Contains(sensorType);
     }
 }

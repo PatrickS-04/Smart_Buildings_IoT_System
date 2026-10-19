@@ -10,7 +10,7 @@ namespace Backend_API.Endpoints
         {
             var group = application.MapGroup("/api/telemetrypacket");
 
-            group.MapPost("/", (TelemetryIngestionRequest telemetryPacketRequest, TelemetryPacketService telemetryPacketService) =>
+            group.MapPost("/", (TelemetryIngestionRequest telemetryPacketRequest, TelemetryIngestionQueueService queueIngestionService) =>
             {
                 if (string.IsNullOrWhiteSpace(telemetryPacketRequest.DeviceMacAddress))
                 {
@@ -28,8 +28,16 @@ namespace Backend_API.Endpoints
                     _ => throw new ArgumentOutOfRangeException(nameof(telemetryPacketRequest.TelemetryValue))
                 };
 
-                telemetryPacketService.AddTelemetryPacket(telemetryPacketModel);
-                return Results.Ok(TelemetryReadingDto.FromPacket(telemetryPacketModel));
+                if (TelemetryPriorityClassifier.GetCriticalPriority(telemetryPacketModel) is int priority)
+                {
+                    queueIngestionService.CriticalEnqueue(telemetryPacketModel, priority);
+                }
+                else
+                {
+                    queueIngestionService.StandardEnqueue(telemetryPacketModel);
+                }
+
+                return Results.Accepted(value: TelemetryReadingDto.FromPacket(telemetryPacketModel));
             });
 
             group.MapGet("/{deviceMacAddress}", (string deviceMacAddress, TelemetryPacketService telemetryPacketService) =>

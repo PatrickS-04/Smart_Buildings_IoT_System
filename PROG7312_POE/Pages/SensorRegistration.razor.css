@@ -172,6 +172,11 @@
     background: rgba(155, 138, 251, 0.14);
 }
 
+.category-actuator {
+    color: #f08a4b;
+    background: rgba(240, 138, 75, 0.14);
+}
+
 .sensor-type {
     font-size: 0.78rem;
     color: var(--text-muted);
