@@ -38,6 +38,22 @@ namespace Backend_API.Endpoints
 
                 return Results.Ok(neighbours);
             });
+
+            // Everything the gateway can still reach, what is down (and where its traffic could hop), and what is cut off
+            group.MapGet("/reachability", (string? mainZone, MeshRoutingService meshRoutingService) =>
+            {
+                return Results.Ok(meshRoutingService.GetReachability(mainZone));
+            });
+
+            // Fewest-hop route from one sensor to the gateway, with the next hop, and whether it had to be re-routed
+            group.MapGet("/route/{deviceMacAddress}", (string deviceMacAddress, MeshRoutingService meshRoutingService) =>
+            {
+                var route = meshRoutingService.GetRoute(deviceMacAddress);
+
+                return route is null
+                    ? Results.NotFound(new { error = $"{deviceMacAddress} is not part of the mesh" })
+                    : Results.Ok(route);
+            });
         }
     }
 }
