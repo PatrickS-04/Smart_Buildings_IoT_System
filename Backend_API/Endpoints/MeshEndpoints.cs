@@ -54,6 +54,13 @@ namespace Backend_API.Endpoints
                     ? Results.NotFound(new { error = $"{deviceMacAddress} is not part of the mesh" })
                     : Results.Ok(route);
             });
+
+            // The most power-efficient set of links that connects every working sensor to the gateway (Prim's algorithm)
+            // compared against keeping every link on and against the fewest-hop routes
+            group.MapGet("/mst", (MeshMstService meshMstService) =>
+            {
+                return Results.Ok(meshMstService.GetMst());
+            });
         }
     }
 }
