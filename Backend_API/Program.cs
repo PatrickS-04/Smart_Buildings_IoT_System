@@ -65,5 +65,6 @@ app.MapCommandEndpoints();
 app.MapSearchEndpoints();
 app.MapAnalyticsEndpoints();
 app.MapSuggestionEndpoints();
+app.MapArchiveEndpoints();
 
 app.Run();
