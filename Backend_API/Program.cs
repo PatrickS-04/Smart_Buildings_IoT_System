@@ -23,6 +23,7 @@ builder.Services.AddSingleton<EpisodeDetectionService>();
 builder.Services.AddSingleton<PredictionEngineService>();
 builder.Services.AddSingleton<ActivityTrackerService>();
 builder.Services.AddSingleton<SuggestionEngineService>();
+builder.Services.AddSingleton<MeshTopologyService>();
 
 builder.Services.AddHttpClient("TimerApi", httpClient =>
 {
@@ -66,5 +67,6 @@ app.MapSearchEndpoints();
 app.MapAnalyticsEndpoints();
 app.MapSuggestionEndpoints();
 app.MapArchiveEndpoints();
+app.MapMeshEndpoints();
 
 app.Run();
