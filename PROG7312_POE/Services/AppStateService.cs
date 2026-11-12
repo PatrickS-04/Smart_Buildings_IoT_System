@@ -9,10 +9,17 @@
         public List<AlertItem> RecentAlerts { get; } = new();
         public Dictionary<string, string> PreviousSeverityByMacAddress { get; } = new();
 
-        // Command Stream and History page
+        // Command Stream and History Page
         public string SearchText { get; set; } = string.Empty;
         public string CategoryFilter { get; set; } = string.Empty;
         public string AlertStateFilter { get; set; } = string.Empty;
         public string ZoneFilter { get; set; } = string.Empty;
+
+        // Network Topology and Mesh Routing Page
+        public string MeshSelectedDeviceMacAddress { get; set; } = string.Empty;
+        public string MeshZoneFilter { get; set; } = string.Empty;
+        public bool MeshShowMst { get; set; } = true;
+        public DateTime? MeshHistoryFrom { get; set; }
+        public DateTime? MeshHistoryTo { get; set; }
     }
 }
