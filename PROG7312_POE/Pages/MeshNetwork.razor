@@ -1,3 +1,756 @@
 ﻿@page "/meshnetwork"
+@implements IDisposable
+@inject HttpClient Http
+@inject AppStateService AppStateService
+@using System.Globalization
+@using PROG7312_POE.Services
+@using PROG7312_POE.Shared
+@using PROG7312_POE.Shared.DTOs
 
-Disabled - to be implemented in the final POE
+<PageTitle>Network Topology and Mesh Routing</PageTitle>
+
+<div class="mesh">
+    <h1>Network Topology and Mesh Routing</h1>
+
+    @if (_topology is null)
+    {
+        <p class="empty-state">Loading the mesh...</p>
+    }
+    else if (_topology.NodeCount == 0)
+    {
+        <p class="empty-state">No sensors are registered yet. Register some sensors and they will appear in the mesh.</p>
+    }
+
+    <section class="kpi-grid" aria-label="Mesh summary">
+        <div class="kpi-card">
+            <p class="kpi-label">Sensors online</p>
+            <p class="kpi-value">@(_topology?.OnlineCount ?? 0)</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Wireless links</p>
+            <p class="kpi-value">@(_topology?.LinkCount ?? 0)</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Reaching gateway</p>
+            <p class="kpi-value">@(_reach?.ReachableCount ?? 0)</p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Down or cut off</p>
+            <p class="kpi-value @(((_reach?.DownCount ?? 0) + (_reach?.IsolatedCount ?? 0)) > 0 ? "kpi-critical" : "")">
+                @((_reach?.DownCount ?? 0) + (_reach?.IsolatedCount ?? 0))
+            </p>
+        </div>
+
+        <div class="kpi-card">
+            <p class="kpi-label">Power saved by MST</p>
+            <p class="kpi-value">@((_mst?.SavingVsActiveMeshPercent ?? 0).ToString("0.#"))<span class="kpi-sub">%</span></p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2 class="panel-h2">Live mesh map</h2>
+            <label class="toggle">
+                <input type="checkbox" @bind="ShowMst" />
+                Show power-efficient tree (MST)
+            </label>
+        </div>
+
+        <ul class="legend" aria-label="Map key">
+            <li><span class="swatch swatch-online"></span>Online</li>
+            <li><span class="swatch swatch-offline"></span>Offline</li>
+            <li><span class="swatch swatch-isolated"></span>Cut off</li>
+            <li><span class="swatch swatch-gateway"></span>Gateway</li>
+            <li><span class="line-sample line-sample-mst"></span>MST link</li>
+            <li><span class="line-sample line-sample-route"></span>Selected route</li>
+            <li><span class="line-sample line-sample-normal"></span>Normal route (re-routed)</li>
+        </ul>
+
+        @if (_topology is not null && _nodes.Count > 0)
+        {
+            <svg viewBox="0 0 1000 600" class="mesh-map" role="img" aria-label="Map of the sensor mesh network">
+                @foreach (var link in OrderedLinks())
+                {
+                    if (!_nodes.TryGetValue(link.From, out var from) || !_nodes.TryGetValue(link.To, out var to))
+                    {
+                        continue;
+                    }
+
+                    <line x1="@F(from.X)" y1="@F(from.Y)" x2="@F(to.X)" y2="@F(to.Y)" class="@LinkClass(link)" />
+                }
+
+                @foreach (var node in _topology.Nodes)
+                {
+                    var deviceMacAddress = node.DeviceMacAddress;
+
+                    @if (deviceMacAddress == SelectedMacAddress)
+                    {
+                        <circle cx="@F(node.X)" cy="@F(node.Y)" r="19" class="selected-ring" />
+                    }
+
+                    @if (node.IsGateway)
+                    {
+                        <rect x="@F(node.X - 13)" y="@F(node.Y - 13)" width="26" height="26" rx="4" class="@NodeClass(node)" @onclick="() => SelectAsync(deviceMacAddress)">
+                            <title>@node.Label</title>
+                        </rect>
+                        <text x="@F(node.X)" y="@F(node.Y + 30)" text-anchor="middle" class="node-label">GATEWAY</text>
+                    }
+                    else
+                    {
+                        <circle cx="@F(node.X)" cy="@F(node.Y)" r="11" class="@NodeClass(node)" @onclick="() => SelectAsync(deviceMacAddress)">
+                            <title>@node.Label (@deviceMacAddress)</title>
+                        </circle>
+                        <text x="@F(node.X)" y="@F(node.Y + 27)" text-anchor="middle" class="node-label">@ShortId(deviceMacAddress)</text>
+                    }
+                }
+            </svg>
+
+            <p class="result-note">Click a sensor on the map to trace its route to the gateway</p>
+        }
+    </section>
+
+    <div class="two-col">
+        <section class="panel">
+            <h2 class="panel-h2">Route tracker</h2>
+
+            <div class="filter-field">
+                <label for="trackInput">MAC address or identifier</label>
+                <input id="trackInput" class="form-control" list="mesh-macs" placeholder="Type or pick a MAC address"
+                    @bind="_macInput" @bind:event="onchange" @bind:after="TrackTypedAsync" />
+                <datalist id="mesh-macs">
+                    @if (_topology is not null)
+                    {
+                        @foreach (var node in _topology.Nodes.Where(node => !node.IsGateway))
+                        {
+                            <option value="@node.DeviceMacAddress">@node.Label</option>
+                        }
+                    }
+                </datalist>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_trackError))
+            {
+                <p class="feedback feedback-error">@_trackError</p>
+            }
+
+            @if (_route is null)
+            {
+                <p class="empty-state">Select a sensor to see how its data reaches the gateway</p>
+            }
+            else
+            {
+                <p class="route-title">
+                    <span class="state-badge @RouteBadgeClass()">@RouteBadgeText()</span>
+                    @_route.Label
+                </p>
+                <p class="result-note">@_route.Message</p>
+
+                @if (_route.RouteFound && _route.Path.Count > 1)
+                {
+                    <div class="route-stats">
+                        <div><span class="stat-label">Hops</span><span class="stat-value">@_route.HopCount</span></div>
+                        <div><span class="stat-label">Power cost</span><span class="stat-value">@_route.TotalCost.ToString("0.0")</span></div>
+                        <div><span class="stat-label">Next hop</span><span class="stat-value">@(_route.NextHop?.Label ?? "-")</span></div>
+                    </div>
+                }
+
+                @if (_route.Path.Count > 0)
+                {
+                    <ol class="hop-list">
+                        @foreach (var hop in _route.Path)
+                        {
+                            <li class="hop @(hop.IsOnline ? "" : "hop-down")">
+                                <span class="hop-number">@hop.Hop</span>
+                                <span class="hop-name">@hop.Label <span class="mono muted">@hop.DeviceMacAddress</span></span>
+                                <span class="hop-cost">@(hop.Hop == 0 ? "start" : $"+{hop.CostFromPrevious:0.0}")</span>
+                            </li>
+                        }
+                    </ol>
+                }
+
+                @if (_route.ReRouted)
+                {
+                    <p class="result-note">
+                        Normal route (now unavailable): @string.Join(" > ", _route.NormalPath.Select(hop => ShortId(hop.DeviceMacAddress)))
+                    </p>
+                }
+
+                @if (_route.DeviceMacAddress != MeshGatewayId)
+                {
+                    <div class="btn-row">
+                        <button type="button" class="btn-off" disabled="@_busy" @onclick="() => SetOnlineAsync(false)">Simulate failures</button>
+                        <button type="button" class="btn-on" disabled="@_busy" @onclick="() => SetOnlineAsync(true)">Restore</button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_feedback))
+                {
+                    <p class="feedback @(_feedbackIsError ? "feedback-error" : "")">@_feedback</p>
+                }
+            }
+        </section>
+
+        <section class="panel">
+            <h2 class="panel-h2">Power-efficient routing (MST)</h2>
+
+            @if (_mst is null || _mst.NodesInTree == 0)
+            {
+                <p class="empty-state">No working sensors to connect yet</p>
+            }
+            else
+            {
+                <p class="result-note">
+                    Prim's algorithm keeps the cheapest set of links that still joins every working sensor to the gateway.
+                    @_mst.NodesInTree sensors are in the tree@(_mst.NodesExcluded > 0 ? $", {_mst.NodesExcluded} left out (down or cut off)" : "").
+                </p>
+
+                <div class="route-stats">
+                    <div><span class="stat-label">All working links</span><span class="stat-value">@_mst.ActiveMeshCost.ToString("0.0")</span></div>
+                    <div><span class="stat-label">Fewest-hop routes</span><span class="stat-value">@_mst.BfsTreeCost.ToString("0.0")</span></div>
+                    <div><span class="stat-label">MST</span><span class="stat-value stat-good">@_mst.MstTotalCost.ToString("0.0")</span></div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="device-table">
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th>MST hops</th>
+                                <th>MST cost</th>
+                                <th>Fewest-hop cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var route in _mst.Routes)
+                            {
+                                <tr>
+                                    <td>@route.Label</td>
+                                    <td>@route.MstHops</td>
+                                    <td>@route.MstPathCost.ToString("0.0")</td>
+                                    <td>@route.BfsPathCost.ToString("0.0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    <section class="panel">
+        <h2 class="panel-h2">Devices connected to the gateway</h2>
+
+        <div class="filter-field zone-filter">
+            <label for="zoneFilter">Zone (subnet)</label>
+            <select id="zoneFilter" class="form-control" @bind="ZoneFilter" @bind:after="RefreshAllAsync">
+                <option value="">Whole building</option>
+                @foreach (var zone in SensorCategorization.MainZones)
+                {
+                    <option value="@zone">@zone</option>
+                }
+            </select>
+        </div>
+
+        @if (_reach is not null)
+        {
+            <p class="result-note">
+                @_reach.ReachableCount reachable, @_reach.DownCount down, @_reach.IsolatedCount cut off.
+                The search visited @_reach.NodesVisited nodes.
+            </p>
+
+            @if (_reach.Down.Count > 0)
+            {
+                <h3 class="panel-h3">Down</h3>
+                <ul class="problem-list">
+                    @foreach (var down in _reach.Down)
+                    {
+                        <li>
+                            <span class="state-badge state-critical">Down</span>
+                            <strong>@down.Label</strong> <span class="mono muted">@down.DeviceMacAddress</span>
+                            <span class="problem-detail">
+                                @if (down.HopThrough.Count == 0)
+                                {
+                                    <text>No working neighbour to hop through</text>
+                                }
+                                else
+                                {
+                                    <text>Hop through: @string.Join(", ", down.HopThrough.Select(MeshHopDto => $"{MeshHopDto.Label} (cost {MeshHopDto.Cost:0.0})"))</text>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (_reach.Isolated.Count > 0)
+            {
+                <h3 class="panel-h3">Cut off</h3>
+                <ul class="problem-list">
+                    @foreach (var isolated in _reach.Isolated)
+                    {
+                        <li>
+                            <span class="state-badge state-warning">Cut off</span>
+                            <strong>@isolated.Label</strong> <span class="mono muted">@isolated.DeviceMacAddress</span>
+                            <span class="problem-detail">Online, but every path to the gateway runs through a down node.</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (_reach.Reachable.Count > 0)
+            {
+                <h3 class="panel-h3">Reachable</h3>
+                <div class="table-wrap">
+                    <table class="device-table">
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th>MAC address</th>
+                                <th>Zone</th>
+                                <th>Hops</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var device in _reach.Reachable)
+                            {
+                                var deviceMacAddress = device.DeviceMacAddress;
+
+                                <tr>
+                                    <td>@device.Label</td>
+                                    <td class="mono">@deviceMacAddress</td>
+                                    <td>@device.MainZone</td>
+                                    <td>@device.Hops</td>
+                                    <td><button type="button" class="btn-on" @onclick="() => SelectAsync(deviceMacAddress)">Track</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </section>
+
+    <section class="panel">
+        <h2 class="panel-h2">Historical telemetry log</h2>
+
+        @if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            <p class="empty-state">Select a sensor on the map or in the tracker to see its history.</p>
+        }
+        else
+        {
+            <p class="result-note">Showing history for <strong>@(_nodes.TryGetValue(SelectedMacAddress, out var selectedNode) ? selectedNode.Label : SelectedMacAddress)</strong> <span class="mono muted">@SelectedMacAddress</span></p>
+
+            <div class="history-controls">
+                <div class="filter-field">
+                    <label for="historyFrom">From</label>
+                    <input id="historyFrom" type="datetime-local" class="form-control" @bind="HistoryFrom" />
+                </div>
+
+                <div class="filter-field">
+                    <label for="historyTo">To</label>
+                    <input id="historyTo" type="datetime-local" class="form-control" @bind="HistoryTo" />
+                </div>
+
+                <button type="button" class="btn-on" disabled="@_historyLoading" @onclick="LoadHistoryAsync">Show readings</button>
+            </div>
+
+            <div class="state-chips">
+                <button type="button" class="chip" @onclick="() => QuickRangeAsync(10)">Last 10 minutes</button>
+                <button type="button" class="chip" @onclick="() => QuickRangeAsync(60)">Last hour</button>
+                <button type="button" class="chip" @onclick="() => QuickRangeAsync(60 * 24)">Last 24 hours</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_historyError))
+            {
+                <p class="feedback feedback-error">@_historyError</p>
+            }
+            else if (_history is not null)
+            {
+                <p class="result-note">
+                    @_history.MatchCount readings in this range. The tree checked @_history.NodesVisited of @_history.TotalStored stored readings to find them.
+                    @if (_history.MatchCount > _history.ReturnedCount)
+                    {
+                        <text>Showing the first @_history.ReturnedCount</text>
+                    }
+                </p>
+
+                @if (_history.TelemetryReadings.Count == 0)
+                {
+                    <p class="empty-state">No readings for this sensor in the chosen range</p>
+                }
+                else
+                {
+                    <div class="table-wrap history-scroll">
+                        <table class="device-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var reading in _history.TelemetryReadings.AsEnumerable().Reverse())
+                                {
+                                    <tr>
+                                        <td class="mono">@FormatTime(reading.TimeStamp)</td>
+                                        <td>@reading.MetricName</td>
+                                        <td>@(reading.Value?.ToString() ?? "-") @reading.Unit</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        }
+    </section>
+</div>
+
+@code {
+    private const string MeshGatewayId = "GATEWAY";
+
+    private MeshTopologyDto? _topology;
+    private ReachabilityDto? _reach;
+    private MstDto? _mst;
+    private RouteDto? _route;
+    private ArchiveQueryResultDto? _history;
+
+    private Dictionary<string, MeshNodeDto> _nodes = new();
+    private HashSet<string> _mstLinks = new();
+    private HashSet<string> _routeLinks = new();
+    private HashSet<string> _normalLinks = new();
+    private HashSet<string> _isolated = new();
+
+    private PeriodicTimer? _liveTimer;
+    private string _macInput = string.Empty;
+    private string _trackError = string.Empty;
+    private string _historyError = string.Empty;
+    private string _feedback = string.Empty;
+    private bool _feedbackIsError;
+    private bool _busy;
+    private bool _historyLoading;
+
+    private string SelectedMacAddress { get => AppStateService.MeshSelectedDeviceMacAddress; set => AppStateService.MeshSelectedDeviceMacAddress = value; }
+    private string ZoneFilter { get => AppStateService.MeshZoneFilter; set => AppStateService.MeshZoneFilter = value; }
+    private bool ShowMst { get => AppStateService.MeshShowMst; set => AppStateService.MeshShowMst = value; }
+    private DateTime HistoryFrom { get => AppStateService.MeshHistoryFrom ?? DateTime.Now.AddHours(-1); set => AppStateService.MeshHistoryFrom = value; }
+    private DateTime HistoryTo { get => AppStateService.MeshHistoryTo ?? DateTime.Now; set => AppStateService.MeshHistoryTo = value; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AppStateService.MeshHistoryTo is null)
+        {
+            AppStateService.MeshHistoryTo = DateTime.Now;
+            AppStateService.MeshHistoryFrom = DateTime.Now.AddHours(-1);
+        }
+
+        _macInput = SelectedMacAddress;
+
+        await RefreshAllAsync();
+
+        if (!string.IsNullOrEmpty(SelectedMacAddress) && SelectedMacAddress != MeshGatewayId)
+        {
+            await LoadHistoryAsync();
+        }
+
+        _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        _ = PollLoopAsync();
+    }
+
+    private async Task PollLoopAsync()
+    {
+        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
+        {
+            await RefreshAllAsync();
+        }
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        await Task.WhenAll(
+            LoadAsync<MeshTopologyDto>("api/mesh/topology", value => _topology = value),
+            LoadAsync<ReachabilityDto>($"api/mesh/reachability?mainZone={Uri.EscapeDataString(ZoneFilter)}", value => _reach = value),
+            LoadAsync<MstDto>("api/mesh/mst", value => _mst = value));
+
+        _nodes = _topology?.Nodes.ToDictionary(node => node.DeviceMacAddress) ?? new();
+
+        // The selected sensor may have been unregistered since the last refresh
+        if (!string.IsNullOrEmpty(SelectedMacAddress) && !_nodes.ContainsKey(SelectedMacAddress))
+        {
+            SelectedMacAddress = string.Empty;
+            _macInput = string.Empty;
+            _history = null;
+        }
+
+        if (string.IsNullOrEmpty(SelectedMacAddress))
+        {
+            _route = null;
+        }
+        else
+        {
+            await LoadAsync<RouteDto>($"api/mesh/route/{Uri.EscapeDataString(SelectedMacAddress)}", value => _route = value);
+        }
+
+        BuildLinkSets();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync<T>(string url, Action<T?> assign)
+    {
+        try
+        {
+            assign(await Http.GetFromJsonAsync<T>(url));
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to load {url}: {exception.Message}");
+        }
+    }
+
+    private void BuildLinkSets()
+    {
+        _mstLinks = _mst is null
+            ? new()
+            : _mst.Links.Select(link => LinkKey(link.From, link.To)).ToHashSet();
+
+        _routeLinks = PairsOf(_route?.Path);
+        _normalLinks = _route is { ReRouted: true } ? PairsOf(_route.NormalPath) : new();
+
+        _isolated = _reach is null
+            ? new()
+            : _reach.Isolated.Select(node => node.DeviceMacAddress).ToHashSet();
+    }
+
+    private static HashSet<string> PairsOf(List<MeshHopDto>? hops)
+    {
+        var pairs = new HashSet<string>();
+
+        if (hops is null)
+        {
+            return pairs;
+        }
+
+        for (var index = 1; index < hops.Count; index++)
+        {
+            pairs.Add(LinkKey(hops[index - 1].DeviceMacAddress, hops[index].DeviceMacAddress));
+        }
+
+        return pairs;
+    }
+
+    private static string LinkKey(string a, string b) =>
+        string.CompareOrdinal(a, b) < 0 ? $"{a}|{b}" : $"{b}|{a}";
+
+    // SELECTING A SENSOR
+
+    private async Task SelectAsync(string deviceMacAddress)
+    {
+        SelectedMacAddress = deviceMacAddress;
+        _macInput = deviceMacAddress;
+        _trackError = string.Empty;
+        _feedback = string.Empty;
+        _history = null;
+        _historyError = string.Empty;
+
+        await RefreshAllAsync();
+
+        if (deviceMacAddress != MeshGatewayId)
+        {
+            await LoadHistoryAsync();
+        }
+    }
+
+    // Accepts a full MAC address, or part of a MAC address or sensor name
+    private async Task TrackTypedAsync()
+    {
+        _trackError = string.Empty;
+        var text = _macInput.Trim();
+
+        if (text.Length == 0)
+        {
+            SelectedMacAddress = string.Empty;
+            _route = null;
+            _history = null;
+            BuildLinkSets();
+            return;
+        }
+
+        var nodes = _topology?.Nodes ?? new List<MeshNodeDto>();
+
+        var match = nodes.FirstOrDefault(node => string.Equals(node.DeviceMacAddress, text, StringComparison.OrdinalIgnoreCase))
+            ?? nodes.FirstOrDefault(node => node.DeviceMacAddress.Contains(text, StringComparison.OrdinalIgnoreCase)
+            || node.Label.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+        {
+            _trackError = $"No device matches \"{text}\".";
+            return;
+        }
+
+        await SelectAsync(match.DeviceMacAddress);
+    }
+
+    private async Task SetOnlineAsync(bool online)
+    {
+        if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _feedback = string.Empty;
+
+        try
+        {
+            var action = online ? "reconnect" : "disconnect";
+            var response = await Http.PostAsync($"api/stream/test/{action}/{Uri.EscapeDataString(SelectedMacAddress)}", null);
+
+            _feedbackIsError = !response.IsSuccessStatusCode;
+            _feedback = response.IsSuccessStatusCode
+                ? (online ? "Sensor restored. The mesh will use it again" : "Sensor switched off. Watch the mesh route around it")
+                : "The server could not change this sensor's state";
+        }
+        catch (Exception exception)
+        {
+            _feedbackIsError = true;
+            _feedback = $"Could not reach the server: {exception.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshAllAsync();
+    }
+
+    // HISTORICAL LOG
+
+    private async Task QuickRangeAsync(int minutes)
+    {
+        HistoryTo = DateTime.Now;
+        HistoryFrom = DateTime.Now.AddMinutes(-minutes);
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        _historyError = string.Empty;
+
+        if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            _history = null;
+            return;
+        }
+
+        if (HistoryFrom > HistoryTo)
+        {
+            _history = null;
+            _historyError = "The start time must be before the end time";
+            return;
+        }
+
+        _historyLoading = true;
+
+        try
+        {
+            var url = $"api/archive/{Uri.EscapeDataString(SelectedMacAddress)}" +
+                $"?from={Uri.EscapeDataString(ToUtcText(HistoryFrom))}" +
+                $"&to={Uri.EscapeDataString(ToUtcText(HistoryTo))}&limit=500";
+
+            var response = await Http.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _history = await response.Content.ReadFromJsonAsync<ArchiveQueryResultDto>();
+            }
+            else
+            {
+                _history = null;
+                _historyError = "Could not load the history for this sensor";
+            }
+        }
+        catch (Exception exception)
+        {
+            _history = null;
+            _historyError = $"Could not reach the server: {exception.Message}";
+        }
+        finally
+        {
+            _historyLoading = false;
+        }
+    }
+
+    // The date pickers give local time. The API wants UTC
+    private static string ToUtcText(DateTime local) =>
+        DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime().ToString("o", CultureInfo.InvariantCulture);
+
+    private static string FormatTime(DateTime utc) =>
+        DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+    // DRAWING THE MAP
+
+    private IEnumerable<MeshLinkDto> OrderedLinks() => _topology!.Links.OrderBy(LinkRank);
+
+    // Plain links are drawn first and the highlighted ones on top of them
+    private int LinkRank(MeshLinkDto link)
+    {
+        var key = LinkKey(link.From, link.To);
+
+        if (_routeLinks.Contains(key)) return 3;
+        if (_normalLinks.Contains(key)) return 2;
+        if (ShowMst && _mstLinks.Contains(key)) return 1;
+        return 0;
+    }
+
+    private string LinkClass(MeshLinkDto link)
+    {
+        var key = LinkKey(link.From, link.To);
+
+        if (_routeLinks.Contains(key)) return "link link-route";
+        if (_normalLinks.Contains(key)) return "link link-normal";
+        if (ShowMst && _mstLinks.Contains(key)) return "link link-mst";
+
+        var down = (_nodes.TryGetValue(link.From, out var from) && !from.IsOnline)
+                || (_nodes.TryGetValue(link.To, out var to) && !to.IsOnline);
+
+        return down ? "link link-down" : "link";
+    }
+
+    private string NodeClass(MeshNodeDto node)
+    {
+        if (node.IsGateway) return "node node-gateway";
+        if (!node.IsOnline) return "node node-offline";
+        if (_isolated.Contains(node.DeviceMacAddress)) return "node node-isolated";
+        return "node node-online";
+    }
+
+    private static string ShortId(string deviceMacAddress) =>
+        deviceMacAddress.Length > 5 ? deviceMacAddress[^5..] : deviceMacAddress;
+
+    // Decimal commas in some cultures would break SVG coordinates, so always use a dot
+    private static string F(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string RouteBadgeClass()
+    {
+        if (_route is null || !_route.RouteFound) return "state-critical";
+        return _route.ReRouted ? "state-warning" : "state-normal";
+    }
+
+    private string RouteBadgeText()
+    {
+        if (_route is null || !_route.RouteFound) return "No route";
+        return _route.ReRouted ? "Re-routed" : "Route OK";
+    }
+
+    public void Dispose()
+    {
+        _liveTimer?.Dispose();
+        _liveTimer = null;
+    }
+}
