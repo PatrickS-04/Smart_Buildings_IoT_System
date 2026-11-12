@@ -484,7 +484,7 @@
 }
 
 .state-normal {
-    color: var(--staus-ok);
+    color: var(--status-ok);
     background: var(--accent-dim);
 }
 
