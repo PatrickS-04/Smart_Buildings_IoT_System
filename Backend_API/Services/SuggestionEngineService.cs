@@ -30,21 +30,43 @@ namespace Backend_API.Services
             _commands = commands;
         }
 
-        public SuggestionsDto Build()
+        public async Task<SuggestionsDto> BuildAsync(CancellationToken cancellationToken = default)
         {
             var now = DateTime.UtcNow;
+
+            // Snapshot the FIFO history queues and the live state once, so every stage
+            // of the pipeline analyses the same consistent data
             var searches = _activityTracker.GetSearches();
             var commands = _activityTracker.GetCommands();
             var liveDevices = _devices.GetAll();
             var forecasts = _predictionEngine.GetAllForecasts();
 
+            // The two stages are independent, so run them concurrently off the request
+            // thread and await both. Insights and actions are computed in parallel
+            var insightsTask = BuildInsightsAsync(searches, commands, liveDevices, forecasts, now, cancellationToken);
+            var actionsTask = BuildActionsAsync(searches, commands, liveDevices, forecasts, now, cancellationToken);
+
+            await Task.WhenAll(insightsTask, actionsTask);
+
             return new SuggestionsDto
             {
                 TrackedSearches = searches.Count,
                 TrackedCommands = commands.Count,
-                Insights = BuildInsights(searches, commands, liveDevices, forecasts, now),
-                SuggestedActions = BuildActions(searches, commands, liveDevices, forecasts, now)
+                Insights = await insightsTask,
+                SuggestedActions = await actionsTask
             };
+        }
+
+        private Task<List<InsightDto>> BuildInsightsAsync(List<SearchActivity> searches, List<CommandActivity> commands,
+            List<LiveDeviceDto> liveDevices, List<SensorForecastDto> forecasts, DateTime now, CancellationToken cancellationToken)
+        {
+            return Task.Run(() => BuildInsights(searches, commands, liveDevices, forecasts, now), cancellationToken);
+        }
+
+        private Task<List<SuggestedActionDto>> BuildActionsAsync(List<SearchActivity> searches, List<CommandActivity> commands,
+            List<LiveDeviceDto> liveDevices, List<SensorForecastDto> forecasts, DateTime now, CancellationToken cancellationToken)
+        {
+            return Task.Run(() => BuildActions(searches, commands, liveDevices, forecasts, now), cancellationToken);
         }
 
         private List<SuggestedActionDto> BuildActions(List<SearchActivity> searches, List<CommandActivity> commands,
@@ -363,7 +385,7 @@ namespace Backend_API.Services
 
             if (seconds < 3600)
             {
-                return $":{ (int)(seconds / 60)}m {(int)(seconds % 60):00}s";
+                return $"{(int)(seconds / 60)}m {(int)(seconds % 60):00}s";
             }
 
             return $"{(int)(seconds / 3600)}h {(int)(seconds % 3600 / 60)}m";

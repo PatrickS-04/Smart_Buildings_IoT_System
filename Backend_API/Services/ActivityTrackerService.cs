@@ -3,12 +3,20 @@
     public record SearchActivity(DateTime AtUtc, string Text, string Category, string AlertState, string Zone);
 
     public record CommandActivity(DateTime AtUtc, string SensorType, string MainZone, bool TurnOn, List<string> TriggeredSensorTypes);
+
+    /// <summary>
+    /// Tracks the user's query/command history in bounded FIFO queues
+    /// Newest activity is enqueued at the back; once the cap is reached the oldest
+    /// entry is dequeued from the front, so the engine always learns from a sliding
+    /// window of recent behaviour
+    /// </summary>
     public class ActivityTrackerService
     {
         private const int MaxItems = 200;
 
-        private readonly List<SearchActivity> _searches = new();
-        private readonly List<CommandActivity> _commands = new();
+        private readonly Queue<SearchActivity> _searches = new();
+        private readonly Queue<CommandActivity> _commands = new();
+        private SearchActivity? _lastSearch;
         private readonly object _lock = new();
 
         public void RecordSearch(string? text, string? category, string? alertState, string? zone)
@@ -23,9 +31,9 @@
 
             lock (_lock)
             {
-                if (_searches.Count > 0)
+                if (_lastSearch is not null)
                 {
-                    var previous = _searches[^1];
+                    var previous = _lastSearch;
                     var justNow = (entry.AtUtc - previous.AtUtc).TotalSeconds < 5;
                     var sameFilters = previous.Category == entry.Category
                         && previous.AlertState == entry.AlertState
@@ -41,17 +49,19 @@
                         if (previous.Text.Length > 0 && (entry.Text.StartsWith(previous.Text, StringComparison.OrdinalIgnoreCase) ||
                             previous.Text.StartsWith(entry.Text, StringComparison.OrdinalIgnoreCase)))
                         {
-                            _searches[^1] = entry;
+                            ReplaceNewest(_searches, entry);
+                            _lastSearch = entry;
                             return;
                         }
                     }
                 }
 
-                _searches.Add(entry);
+                _searches.Enqueue(entry);
+                _lastSearch = entry;
 
-                if (_searches.Count > MaxItems)
+                while (_searches.Count > MaxItems)
                 {
-                    _searches.RemoveAt(0);
+                    _searches.Dequeue();
                 }
             }
         }
@@ -60,11 +70,11 @@
         {
             lock (_lock)
             {
-                _commands.Add(new CommandActivity(DateTime.UtcNow, sensorType, mainZone ?? string.Empty, turnOn, triggerSensorTypes));
+                _commands.Enqueue(new CommandActivity(DateTime.UtcNow, sensorType, mainZone ?? string.Empty, turnOn, triggerSensorTypes));
 
-                if (_commands.Count > MaxItems)
+                while (_commands.Count > MaxItems)
                 {
-                    _commands.RemoveAt(0);
+                    _commands.Dequeue();
                 }
             }
         }
@@ -83,6 +93,26 @@
             {
                 return _commands.ToList();
             }
+        }
+
+        // A queue has no "replace the last item", so drain it and re-enqueue
+        // everything except the newest item, then enqueue the replacement.
+        // The queue is capped at 200 items
+        private static void ReplaceNewest<T>(Queue<T> queue, T replacement)
+        {
+            var count = queue.Count;
+
+            for (var index = 0; index < count - 1; index++)
+            {
+                queue.Enqueue(queue.Dequeue());
+            }
+
+            if (count > 0)
+            {
+                queue.Dequeue();
+            }
+
+            queue.Enqueue(replacement);
         }
     }
 }
