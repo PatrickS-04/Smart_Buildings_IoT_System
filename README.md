@@ -284,3 +284,4 @@ The navigation menu has IoT Sensor Telemetry (Part 1), Sensor Registration (Part
   - Historical telemetry log: for the selected sensor, a time-stamped table of readings between a From and To date, with quick ranges (last 10 minutes, last hour, last 24 hours), retrieved from the AVL tree archive
 
 **YouTube Video Presentation Link PART 3:**
+https://youtu.be/QQCMFc4x5ak
