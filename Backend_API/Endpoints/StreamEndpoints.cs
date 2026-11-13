@@ -19,13 +19,13 @@ namespace Backend_API.Endpoints
                 return Results.Ok(deviceStateService.GetAll());
             });
 
-            group.MapGet("/devices/{mac}", (string deviceMacAddress, DeviceStateService deviceState) =>
+            group.MapGet("/devices/{deviceMacAddress}", (string deviceMacAddress, DeviceStateService deviceState) =>
             {
                 var device = deviceState.GetByMacAddress(deviceMacAddress);
                 return device is not null ? Results.Ok(device) : Results.NotFound();
             });
 
-            group.MapGet("/history/{mac}", (string deviceMacAddress, int? count, TelemetryHistoryService historyService) =>
+            group.MapGet("/history/{deviceMacAddress}", (string deviceMacAddress, int? count, TelemetryHistoryService historyService) =>
             {
                 return Results.Ok(historyService.GetLatestReading(deviceMacAddress, Math.Clamp(count ?? 20, 1, 500)));
             });
@@ -52,7 +52,7 @@ namespace Backend_API.Endpoints
                 return Results.Ok(new { standardEnqueued = total, criticalEnqueued = 1 });
             });
 
-            group.MapPost("/test/disconnect/{mac}", (string deviceMacAddress, SensorRegistrationService sensorRegistrationService, DeviceStateService deviceStateService) =>
+            group.MapPost("/test/disconnect/{deviceMacAddress}", (string deviceMacAddress, SensorRegistrationService sensorRegistrationService, DeviceStateService deviceStateService) =>
             {
                 if (sensorRegistrationService.GetSensorByMacAddress(deviceMacAddress) is null)
                 {
@@ -63,7 +63,7 @@ namespace Backend_API.Endpoints
                 return Results.Ok(new { silenced = deviceMacAddress });
             });
 
-            group.MapPost("/test/reconnect/{mac}", (string deviceMacAddress, DeviceStateService deviceStateService) =>
+            group.MapPost("/test/reconnect/{deviceMacAddress}", (string deviceMacAddress, DeviceStateService deviceStateService) =>
             {
                 deviceStateService.SetSilenced(deviceMacAddress, false);
                 return Results.Ok(new { reconnected = deviceMacAddress });

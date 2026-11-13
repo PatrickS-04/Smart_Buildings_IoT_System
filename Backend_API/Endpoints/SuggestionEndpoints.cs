@@ -9,9 +9,9 @@ namespace Backend_API.Endpoints
         {
             var group = application.MapGroup("/api/suggestions");
 
-            group.MapGet("/", (SuggestionEngineService suggestionEngine) =>
+            group.MapGet("/", async (SuggestionEngineService suggestionEngine, CancellationToken cancellationToken) =>
             {
-                return Results.Ok(suggestionEngine.Build());
+                return Results.Ok(await suggestionEngine.BuildAsync(cancellationToken));
             });
 
             group.MapPost("/test/seed", (ActivityTrackerService activityTracker, string trigger, string actuator, bool turnOn,

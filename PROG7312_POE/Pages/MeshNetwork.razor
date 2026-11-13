@@ -1,3 +1,1554 @@
 ﻿@page "/meshnetwork"
+@implements IDisposable
+@inject HttpClient Http
+@inject AppStateService AppStateService
+@using System.Globalization
+@using PROG7312_POE.Services
+@using PROG7312_POE.Shared
+@using PROG7312_POE.Shared.DTOs
 
-Disabled - to be implemented in the final POE
+<PageTitle>Network Topology and Mesh Routing</PageTitle>
+
+<style>
+    /* ==========================================================================
+       Network Topology and Mesh Routing page
+       Plain global stylesheet (linked from index.html). Every class starts with
+       "mesh-" so nothing here can clash with the other pages.
+       ========================================================================== */
+
+    .mesh-page {
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+        padding-bottom: 2rem;
+    }
+
+        .mesh-page h1 {
+            margin: 0;
+        }
+
+    .mesh-header p {
+        margin: 0.35rem 0 0;
+        color: var(--text-muted);
+        font-size: 0.92rem;
+    }
+
+    .mesh-mono {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+    }
+
+    .mesh-muted {
+        color: var(--text-faint);
+    }
+
+    .mesh-note {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin: 0 0 1rem;
+    }
+
+    .mesh-empty {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        padding: 1.25rem;
+        border: 1px dashed var(--border-strong);
+        border-radius: 10px;
+        text-align: center;
+        margin: 0;
+    }
+
+    /* ---------- Summary cards ---------- */
+
+    .mesh-kpis {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .mesh-kpi {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-top: 3px solid var(--accent);
+        border-radius: 10px;
+        padding: 1rem 1.25rem 1.1rem;
+    }
+
+    .mesh-kpi-label {
+        margin: 0 0 0.5rem;
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .mesh-kpi-value {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 2rem;
+        line-height: 1.1;
+    }
+
+    .mesh-kpi-sub {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        margin-left: 0.2rem;
+    }
+
+    .mesh-kpi-bad {
+        border-top-color: var(--status-critical);
+    }
+
+        .mesh-kpi-bad .mesh-kpi-value {
+            color: var(--status-critical);
+        }
+
+    /* ---------- Panels ---------- */
+
+    .mesh-panel {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .mesh-panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .mesh-panel-title {
+        margin: 0;
+        font-size: 1.15rem;
+    }
+
+    .mesh-panel-sub {
+        margin: 0.25rem 0 0;
+        font-size: 0.84rem;
+        color: var(--text-muted);
+    }
+
+    .mesh-subtitle {
+        margin: 1.75rem 0 0.9rem;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        font-family: var(--font-body);
+        font-weight: 600;
+    }
+
+    .mesh-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem;
+        align-items: start;
+    }
+
+    .mesh-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .mesh-toggle input {
+            accent-color: var(--accent);
+            width: 1rem;
+            height: 1rem;
+        }
+
+    /* ---------- Map ---------- */
+
+    .mesh-legend {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem 1.5rem;
+        margin: 0 0 1rem;
+        padding: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+        .mesh-legend li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+    .mesh-swatch {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 3px solid;
+        box-sizing: border-box;
+        background: var(--bg-surface-raised);
+    }
+
+    .mesh-swatch-online {
+        border-color: var(--status-ok);
+    }
+
+    .mesh-swatch-offline {
+        border-color: var(--status-critical);
+        background: var(--bg-base);
+    }
+
+    .mesh-swatch-isolated {
+        border-color: var(--status-warn);
+    }
+
+    .mesh-swatch-gateway {
+        border-color: var(--accent-strong);
+        border-radius: 4px;
+        background: var(--accent-dim);
+    }
+
+    .mesh-line-sample {
+        display: inline-block;
+        width: 28px;
+        height: 0;
+        border-top: 3px solid;
+    }
+
+    .mesh-line-sample-mst {
+        border-color: var(--accent);
+        opacity: 0.6;
+    }
+
+    .mesh-line-sample-route {
+        border-color: var(--text-primary);
+    }
+
+    .mesh-line-sample-normal {
+        border-color: var(--status-warn);
+        border-top-style: dashed;
+    }
+
+    .mesh-map {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: var(--bg-base);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+    }
+
+    .mesh-grid-line {
+        fill: none;
+        stroke: rgba(148, 163, 184, 0.07);
+        stroke-width: 1;
+    }
+
+    .mesh-ring {
+        fill: none;
+        stroke: rgba(53, 208, 184, 0.14);
+        stroke-width: 1.5;
+        stroke-dasharray: 3 7;
+    }
+
+    .mesh-link {
+        stroke: rgba(148, 163, 184, 0.32);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+    }
+
+    .mesh-link-down {
+        stroke: rgba(255, 107, 107, 0.45);
+        stroke-dasharray: 3 6;
+    }
+
+    .mesh-link-mst {
+        stroke: var(--accent);
+        stroke-width: 3;
+        opacity: 0.65;
+    }
+
+    .mesh-link-normal {
+        stroke: var(--status-warn);
+        stroke-width: 3;
+        stroke-dasharray: 9 6;
+    }
+
+    .mesh-link-route {
+        stroke: var(--text-primary);
+        stroke-width: 4.5;
+    }
+
+    .mesh-link-cost {
+        fill: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        paint-order: stroke;
+        stroke: var(--bg-base);
+        stroke-width: 4px;
+        stroke-linejoin: round;
+        pointer-events: none;
+    }
+
+    .mesh-node {
+        stroke-width: 3.5;
+        cursor: pointer;
+        transition: stroke-width 0.15s ease;
+    }
+
+        .mesh-node:hover {
+            stroke-width: 6;
+        }
+
+    .mesh-node-online {
+        fill: var(--bg-surface-raised);
+        stroke: var(--status-ok);
+    }
+
+    .mesh-node-offline {
+        fill: var(--bg-base);
+        stroke: var(--status-critical);
+    }
+
+    .mesh-node-isolated {
+        fill: var(--bg-surface-raised);
+        stroke: var(--status-warn);
+    }
+
+    .mesh-node-gateway {
+        fill: var(--accent-dim);
+        stroke: var(--accent-strong);
+    }
+
+    .mesh-selected {
+        fill: none;
+        stroke: var(--text-primary);
+        stroke-width: 2;
+        stroke-dasharray: 5 4;
+        animation: mesh-spin-dash 1.2s linear infinite;
+        pointer-events: none;
+    }
+
+    @@keyframes mesh-spin-dash {
+        to {
+            stroke-dashoffset: -18;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .mesh-selected {
+            animation: none;
+        }
+    }
+
+    .mesh-node-label {
+        fill: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        pointer-events: none;
+    }
+
+    .mesh-node-type {
+        fill: var(--text-faint);
+        font-family: var(--font-body);
+        font-size: 11px;
+        pointer-events: none;
+    }
+
+    /* ---------- Forms and buttons ---------- */
+
+    .mesh-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        margin-bottom: 1.1rem;
+    }
+
+        .mesh-field label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        .mesh-field input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+
+    .mesh-field-narrow {
+        max-width: 340px;
+    }
+
+    .mesh-history-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 0.25rem;
+    }
+
+        .mesh-history-controls .mesh-field {
+            margin-bottom: 0;
+        }
+
+    .mesh-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.55rem 1.15rem;
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        font-weight: 500;
+        line-height: 1.2;
+        color: var(--text-primary);
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+
+        .mesh-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent-strong);
+        }
+
+        .mesh-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+    .mesh-btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #05221d;
+    }
+
+        .mesh-btn-primary:hover:not(:disabled) {
+            background: var(--accent-strong);
+            border-color: var(--accent-strong);
+            color: #05221d;
+        }
+
+    .mesh-btn-danger:hover:not(:disabled) {
+        border-color: var(--status-critical);
+        color: var(--status-critical);
+    }
+
+    .mesh-btn-small {
+        padding: 0.3rem 0.85rem;
+        font-size: 0.82rem;
+    }
+
+    .mesh-btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+    }
+
+    .mesh-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1rem 0 1.25rem;
+    }
+
+    .mesh-chip {
+        padding: 0.4rem 1rem;
+        font-family: var(--font-body);
+        font-size: 0.84rem;
+        color: var(--text-primary);
+        background: var(--bg-base);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+        .mesh-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent-strong);
+        }
+
+    .mesh-feedback {
+        margin: 1rem 0 0;
+        font-size: 0.88rem;
+        color: var(--status-ok);
+    }
+
+    .mesh-feedback-error {
+        color: var(--status-critical);
+    }
+
+    /* ---------- Route tracker ---------- */
+
+    .mesh-route-title {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1.25rem 0 0.5rem;
+        font-weight: 600;
+    }
+
+    .mesh-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin: 0.25rem 0 1.25rem;
+    }
+
+    .mesh-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.8rem 1rem;
+        background: var(--bg-base);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        min-width: 0;
+    }
+
+    .mesh-stat-label {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .mesh-stat-value {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mesh-stat-good {
+        color: var(--status-ok);
+    }
+
+    .mesh-hops {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .mesh-hop {
+        display: grid;
+        grid-template-columns: 2rem 1fr auto;
+        gap: 0.85rem;
+        align-items: center;
+        padding: 0.7rem 1rem;
+        background: var(--bg-base);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .mesh-hop-down {
+        border-color: var(--status-critical);
+    }
+
+    .mesh-hop-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 50%;
+        background: var(--accent-dim);
+        color: var(--accent-strong);
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+    }
+
+    .mesh-hop-name {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+    }
+
+    .mesh-hop-cost {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+    }
+
+    /* ---------- Tables ---------- */
+
+    .mesh-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+    }
+
+    .mesh-scroll {
+        max-height: 440px;
+        overflow-y: auto;
+    }
+
+    .mesh-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        --bs-table-bg: transparent;
+        --bs-table-color: var(--text-primary);
+    }
+
+        .mesh-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            padding: 0.85rem 1.25rem;
+            text-align: left;
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            background: var(--bg-surface-raised);
+            border-bottom: 1px solid var(--border-strong);
+        }
+
+        .mesh-table td {
+            padding: 0.8rem 1.25rem;
+            white-space: nowrap;
+            color: var(--text-primary);
+            background: transparent;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .mesh-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mesh-table tbody tr:hover td {
+            background: rgba(148, 163, 184, 0.06);
+        }
+
+    .mesh-col-right {
+        text-align: right !important;
+    }
+
+    /* ---------- Problem lists and badges ---------- */
+
+    .mesh-problems {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+        .mesh-problems li {
+            padding: 0.9rem 1.1rem;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+    .mesh-problem-detail {
+        display: block;
+        margin-top: 0.45rem;
+        color: var(--text-muted);
+        font-size: 0.84rem;
+        line-height: 1.5;
+    }
+
+    .mesh-badge {
+        display: inline-block;
+        padding: 0.15rem 0.7rem;
+        margin-right: 0.5rem;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .mesh-badge-ok {
+        color: var(--status-ok);
+        background: var(--accent-dim);
+    }
+
+    .mesh-badge-warn {
+        color: var(--status-warn);
+        background: rgba(245, 166, 35, 0.14);
+    }
+
+    .mesh-badge-bad {
+        color: var(--status-critical);
+        background: rgba(255, 107, 107, 0.14);
+    }
+
+    /* ---------- Small screens ---------- */
+
+    @@media (max-width: 1100px) {
+        .mesh-kpis {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .mesh-grid-2 {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .mesh-history-controls {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+            .mesh-history-controls .mesh-btn {
+                width: 100%;
+            }
+    }
+
+    @@media (max-width: 640px) {
+        .mesh-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mesh-stats {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .mesh-panel {
+            padding: 1.1rem;
+        }
+    }
+</style>
+
+<div class="mesh-page">
+
+    <header class="mesh-header">
+        <h1>Network Topology and Mesh Routing</h1>
+        <p>
+            Every sensor is a node in a wireless mesh that relays its readings towards the gateway.
+            Trace a sensor's route, see which links the network would keep to save power, and check what happens when a node fails.
+        </p>
+    </header>
+
+    <section class="mesh-kpis" aria-label="Mesh summary">
+        <div class="mesh-kpi">
+            <p class="mesh-kpi-label">Sensors online</p>
+            <p class="mesh-kpi-value">@(_topology?.OnlineCount ?? 0)<span class="mesh-kpi-sub">of @(_topology?.NodeCount ?? 0)</span></p>
+        </div>
+
+        <div class="mesh-kpi">
+            <p class="mesh-kpi-label">Wireless links</p>
+            <p class="mesh-kpi-value">@(_topology?.LinkCount ?? 0)</p>
+        </div>
+
+        <div class="mesh-kpi">
+            <p class="mesh-kpi-label">Reaching gateway</p>
+            <p class="mesh-kpi-value">@(_reach?.ReachableCount ?? 0)</p>
+        </div>
+
+        <div class="mesh-kpi @(ProblemCount > 0 ? "mesh-kpi-bad" : "")">
+            <p class="mesh-kpi-label">Down or cut off</p>
+            <p class="mesh-kpi-value">@ProblemCount</p>
+        </div>
+
+        <div class="mesh-kpi">
+            <p class="mesh-kpi-label">Power saved by MST</p>
+            <p class="mesh-kpi-value">@((_mst?.SavingVsActiveMeshPercent ?? 0).ToString("0.#"))<span class="mesh-kpi-sub">%</span></p>
+        </div>
+    </section>
+
+    <section class="mesh-panel">
+        <div class="mesh-panel-head">
+            <div>
+                <h2 class="mesh-panel-title">Live mesh map</h2>
+                <p class="mesh-panel-sub">
+                    @(_lastUpdated == DateTime.MinValue ? "Connecting..." : $"Live, updated {_lastUpdated:HH:mm:ss}"). Click a sensor to trace its route.
+                </p>
+            </div>
+
+            <label class="mesh-toggle">
+                <input type="checkbox" @bind="ShowMst" />
+                Show power-efficient tree (MST)
+            </label>
+        </div>
+
+        <ul class="mesh-legend" aria-label="Map key">
+            <li><span class="mesh-swatch mesh-swatch-online"></span>Online</li>
+            <li><span class="mesh-swatch mesh-swatch-offline"></span>Offline</li>
+            <li><span class="mesh-swatch mesh-swatch-isolated"></span>Cut off</li>
+            <li><span class="mesh-swatch mesh-swatch-gateway"></span>Gateway</li>
+            <li><span class="mesh-line-sample mesh-line-sample-mst"></span>MST link</li>
+            <li><span class="mesh-line-sample mesh-line-sample-route"></span>Selected route</li>
+            <li><span class="mesh-line-sample mesh-line-sample-normal"></span>Normal route (re-routed)</li>
+        </ul>
+
+        @if (_topology is null)
+        {
+            <p class="mesh-empty">Loading the mesh...</p>
+        }
+        else if (_topology.NodeCount == 0)
+        {
+            <p class="mesh-empty">No sensors are registered yet. Register some sensors and they will appear in the mesh.</p>
+        }
+        else
+        {
+            <svg viewBox="0 -10 1000 640" class="mesh-map" role="img" aria-label="Map of the sensor mesh network">
+                <defs>
+                    <pattern id="meshGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(148,163,184,0.07)" class="mesh-grid-line" />
+                    </pattern>
+                </defs>
+
+                <rect x="0" y="-10" width="1000" height="640" fill="url(#meshGrid)" />
+
+                @if (_gateway is not null)
+                {
+                    <circle cx="@F(_gateway.X)" cy="@F(_gateway.Y)" r="170" fill="none" stroke="rgba(53,208,184,0.14)" class="mesh-ring" />
+                    <circle cx="@F(_gateway.X)" cy="@F(_gateway.Y)" r="320" fill="none" stroke="rgba(53,208,184,0.14)" class="mesh-ring" />
+                }
+
+                @foreach (var link in OrderedLinks())
+                {
+                    if (!_nodes.TryGetValue(link.From, out var from) || !_nodes.TryGetValue(link.To, out var to))
+                    {
+                        continue;
+                    }
+
+                    <line x1="@F(from.X)" y1="@F(from.Y)" x2="@F(to.X)" y2="@F(to.Y)" stroke="#64748b" stroke-width="1.6" class="@LinkClass(link)" />
+
+                    @if (_routeLinks.Contains(LinkKey(link.From, link.To)))
+                    {
+                        <g>
+                            <text x="@F((from.X + to.X) / 2)" y="@F((from.Y + to.Y) / 2 - 8)" text-anchor="middle" fill="#e8edf5" font-size="12" class="mesh-link-cost">@link.Cost.ToString("0.0", CultureInfo.InvariantCulture)</text>
+                        </g>
+                    }
+                }
+
+                @foreach (var node in _topology.Nodes)
+                {
+                    var deviceMacAddress = node.DeviceMacAddress;
+
+                    @if (deviceMacAddress == SelectedMacAddress)
+                    {
+                        <circle cx="@F(node.X)" cy="@F(node.Y)" r="21" fill="none" stroke="#e8edf5" stroke-width="2" class="mesh-selected" />
+                    }
+
+                    @if (node.IsGateway)
+                    {
+                        <rect x="@F(node.X - 14)" y="@F(node.Y - 14)" width="28" height="28" rx="6" fill="#14352f" stroke="#58e6cf" stroke-width="3.5" class="@NodeClass(node)" @onclick="() => SelectAsync(deviceMacAddress)">
+                            <title>@node.Label</title>
+                        </rect>
+                        <g>
+                            <text x="@F(node.X)" y="@F(node.Y + 34)" text-anchor="middle" fill="#8b98ac" font-size="12" class="mesh-node-label">GATEWAY</text>
+                        </g>
+                    }
+                    else
+                    {
+                        <circle cx="@F(node.X)" cy="@F(node.Y)" r="12" fill="#1b2438" stroke="#35d0b8" stroke-width="3.5" class="@NodeClass(node)" @onclick="() => SelectAsync(deviceMacAddress)">
+                            <title>@node.Label (@deviceMacAddress) - @(node.IsOnline ? "online" : "offline")</title>
+                        </circle>
+                        <g>
+                            <text x="@F(node.X)" y="@F(node.Y - 20)" text-anchor="middle" fill="#5c6b85" font-size="11" class="mesh-node-type">@node.SensorType</text>
+                            <text x="@F(node.X)" y="@F(node.Y + 31)" text-anchor="middle" fill="#8b98ac" font-size="12" class="mesh-node-label">@ShortId(deviceMacAddress)</text>
+                        </g>
+                    }
+                }
+            </svg>
+        }
+    </section>
+
+    <div class="mesh-grid-2">
+        <section class="mesh-panel">
+            <div class="mesh-panel-head">
+                <div>
+                    <h2 class="mesh-panel-title">Route tracker</h2>
+                    <p class="mesh-panel-sub">The fewest-hop path from a sensor to the gateway, found with a breadth-first search.</p>
+                </div>
+            </div>
+
+            <div class="mesh-field">
+                <label for="trackInput">MAC address or identifier</label>
+                <input id="trackInput" class="form-control" list="mesh-macs" placeholder="Type or pick a MAC address"
+                       @bind="_macInput" @bind:event="onchange" @bind:after="TrackTypedAsync" />
+                <datalist id="mesh-macs">
+                    @if (_topology is not null)
+                    {
+                        @foreach (var node in _topology.Nodes.Where(node => !node.IsGateway))
+                        {
+                            <option value="@node.DeviceMacAddress">@node.Label</option>
+                        }
+                    }
+                </datalist>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_trackError))
+            {
+                <p class="mesh-feedback mesh-feedback-error">@_trackError</p>
+            }
+
+            @if (_route is null)
+            {
+                <p class="mesh-empty">Select a sensor on the map, or type its MAC address, to see how its data reaches the gateway.</p>
+            }
+            else
+            {
+                <p class="mesh-route-title">
+                    <span class="mesh-badge @RouteBadgeClass()">@RouteBadgeText()</span>
+                    @_route.Label
+                </p>
+                <p class="mesh-note">@_route.Message</p>
+
+                @if (_route.RouteFound && _route.Path.Count > 1)
+                {
+                    <div class="mesh-stats">
+                        <div class="mesh-stat"><span class="mesh-stat-label">Hops</span><span class="mesh-stat-value">@_route.HopCount</span></div>
+                        <div class="mesh-stat"><span class="mesh-stat-label">Power cost</span><span class="mesh-stat-value">@_route.TotalCost.ToString("0.0")</span></div>
+                        <div class="mesh-stat"><span class="mesh-stat-label">Next hop</span><span class="mesh-stat-value">@(_route.NextHop is null ? "-" : ShortId(_route.NextHop.DeviceMacAddress))</span></div>
+                    </div>
+                }
+
+                @if (_route.Path.Count > 0)
+                {
+                    <ol class="mesh-hops">
+                        @foreach (var hop in _route.Path)
+                        {
+                            <li class="mesh-hop @(hop.IsOnline ? "" : "mesh-hop-down")">
+                                <span class="mesh-hop-number">@hop.Hop</span>
+                                <span class="mesh-hop-name">
+                                    <span>@hop.Label</span>
+                                    <span class="mesh-mono mesh-muted">@hop.DeviceMacAddress</span>
+                                </span>
+                                <span class="mesh-hop-cost">@(hop.Hop == 0 ? "start" : $"+{hop.CostFromPrevious:0.0}")</span>
+                            </li>
+                        }
+                    </ol>
+                }
+
+                @if (_route.ReRouted)
+                {
+                    <p class="mesh-note" style="margin-top: 1rem;">
+                        Normal route (now unavailable): @string.Join(" > ", _route.NormalPath.Select(hop => ShortId(hop.DeviceMacAddress)))
+                    </p>
+                }
+
+                @if (_route.DeviceMacAddress != MeshGatewayId)
+                {
+                    <div class="mesh-btn-row">
+                        <button type="button" class="mesh-btn mesh-btn-danger" disabled="@_busy" @onclick="() => SetOnlineAsync(false)">Simulate failure</button>
+                        <button type="button" class="mesh-btn" disabled="@_busy" @onclick="() => SetOnlineAsync(true)">Restore</button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_feedback))
+                {
+                    <p class="mesh-feedback @(_feedbackIsError ? "mesh-feedback-error" : "")">@_feedback</p>
+                }
+            }
+        </section>
+
+        <section class="mesh-panel">
+            <div class="mesh-panel-head">
+                <div>
+                    <h2 class="mesh-panel-title">Power-efficient routing (MST)</h2>
+                    <p class="mesh-panel-sub">The cheapest set of links that still joins every working sensor to the gateway, found with Prim's algorithm.</p>
+                </div>
+            </div>
+
+            @if (_mst is null || _mst.NodesInTree == 0)
+            {
+                <p class="mesh-empty">No working sensors to connect yet.</p>
+            }
+            else
+            {
+                <p class="mesh-note">
+                    @_mst.NodesInTree sensors are in the tree@(_mst.NodesExcluded > 0 ? $", {_mst.NodesExcluded} left out (down or cut off)" : "").
+                    Lower power cost is better.
+                </p>
+
+                <div class="mesh-stats">
+                    <div class="mesh-stat"><span class="mesh-stat-label">All working links</span><span class="mesh-stat-value">@_mst.ActiveMeshCost.ToString("0.0")</span></div>
+                    <div class="mesh-stat"><span class="mesh-stat-label">Fewest-hop routes</span><span class="mesh-stat-value">@_mst.BfsTreeCost.ToString("0.0")</span></div>
+                    <div class="mesh-stat"><span class="mesh-stat-label">MST</span><span class="mesh-stat-value mesh-stat-good">@_mst.MstTotalCost.ToString("0.0")</span></div>
+                </div>
+
+                <div class="mesh-table-wrap">
+                    <table class="mesh-table">
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th class="mesh-col-right">MST hops</th>
+                                <th class="mesh-col-right">MST cost</th>
+                                <th class="mesh-col-right">Fewest-hop cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var route in _mst.Routes)
+                            {
+                                <tr>
+                                    <td>@route.Label</td>
+                                    <td class="mesh-col-right">@route.MstHops</td>
+                                    <td class="mesh-col-right">@route.MstPathCost.ToString("0.0")</td>
+                                    <td class="mesh-col-right">@route.BfsPathCost.ToString("0.0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    <section class="mesh-panel">
+        <div class="mesh-panel-head">
+            <div>
+                <h2 class="mesh-panel-title">Devices connected to the gateway</h2>
+                <p class="mesh-panel-sub">Found with a breadth-first search from the gateway that only passes through online nodes.</p>
+            </div>
+        </div>
+
+        <div class="mesh-field mesh-field-narrow">
+            <label for="zoneFilter">Zone (subnet)</label>
+            <select id="zoneFilter" class="form-control" @bind="ZoneFilter" @bind:after="RefreshAllAsync">
+                <option value="">Whole building</option>
+                @foreach (var zone in SensorCategorization.MainZones)
+                {
+                    <option value="@zone">@zone</option>
+                }
+            </select>
+        </div>
+
+        @if (_reach is not null)
+        {
+            <p class="mesh-note">
+                @_reach.ReachableCount reachable, @_reach.DownCount down, @_reach.IsolatedCount cut off.
+                The search visited @_reach.NodesVisited nodes.
+            </p>
+
+            @if (_reach.Down.Count > 0)
+            {
+                <h3 class="mesh-subtitle">Down</h3>
+                <ul class="mesh-problems">
+                    @foreach (var down in _reach.Down)
+                    {
+                        <li>
+                            <span class="mesh-badge mesh-badge-bad">Down</span>
+                            <strong>@down.Label</strong> <span class="mesh-mono mesh-muted">@down.DeviceMacAddress</span>
+                            <span class="mesh-problem-detail">
+                                @if (down.HopThrough.Count == 0)
+                                {
+                                    <text>No working neighbour to hop through.</text>
+                                }
+                                else
+                                {
+                                    <text>Hop through: @string.Join(", ", down.HopThrough.Select(hop => $"{hop.Label} (cost {hop.Cost:0.0})"))</text>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (_reach.Isolated.Count > 0)
+            {
+                <h3 class="mesh-subtitle">Cut off</h3>
+                <ul class="mesh-problems">
+                    @foreach (var isolated in _reach.Isolated)
+                    {
+                        <li>
+                            <span class="mesh-badge mesh-badge-warn">Cut off</span>
+                            <strong>@isolated.Label</strong> <span class="mesh-mono mesh-muted">@isolated.DeviceMacAddress</span>
+                            <span class="mesh-problem-detail">Online, but every path to the gateway runs through a down node.</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (_reach.Reachable.Count > 0)
+            {
+                <h3 class="mesh-subtitle">Reachable</h3>
+                <div class="mesh-table-wrap">
+                    <table class="mesh-table">
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th>MAC address</th>
+                                <th>Zone</th>
+                                <th class="mesh-col-right">Hops</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var device in _reach.Reachable)
+                            {
+                                var deviceMacAddress = device.DeviceMacAddress;
+
+                                <tr>
+                                    <td>@device.Label</td>
+                                    <td class="mesh-mono">@deviceMacAddress</td>
+                                    <td>@device.MainZone</td>
+                                    <td class="mesh-col-right">@device.Hops</td>
+                                    <td class="mesh-col-right"><button type="button" class="mesh-btn mesh-btn-small" @onclick="() => SelectAsync(deviceMacAddress)">Track</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </section>
+
+    <section class="mesh-panel">
+        <div class="mesh-panel-head">
+            <div>
+                <h2 class="mesh-panel-title">Historical telemetry log</h2>
+                <p class="mesh-panel-sub">Readings for the selected sensor, found with a range query on an AVL tree.</p>
+            </div>
+        </div>
+
+        @if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            <p class="mesh-empty">Select a sensor on the map or in the tracker to see its history.</p>
+        }
+        else
+        {
+            <p class="mesh-note">
+                Showing history for <strong>@(_nodes.TryGetValue(SelectedMacAddress, out var selectedNode) ? selectedNode.Label : SelectedMacAddress)</strong>
+                <span class="mesh-mono mesh-muted">@SelectedMacAddress</span>
+            </p>
+
+            <div class="mesh-history-controls">
+                <div class="mesh-field">
+                    <label for="historyFrom">From</label>
+                    <input id="historyFrom" type="datetime-local" class="form-control" @bind="HistoryFrom" />
+                </div>
+
+                <div class="mesh-field">
+                    <label for="historyTo">To</label>
+                    <input id="historyTo" type="datetime-local" class="form-control" @bind="HistoryTo" />
+                </div>
+
+                <button type="button" class="mesh-btn mesh-btn-primary" disabled="@_historyLoading" @onclick="LoadHistoryAsync">Show readings</button>
+            </div>
+
+            <div class="mesh-chips">
+                <button type="button" class="mesh-chip" @onclick="() => QuickRangeAsync(10)">Last 10 minutes</button>
+                <button type="button" class="mesh-chip" @onclick="() => QuickRangeAsync(60)">Last hour</button>
+                <button type="button" class="mesh-chip" @onclick="() => QuickRangeAsync(60 * 24)">Last 24 hours</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_historyError))
+            {
+                <p class="mesh-feedback mesh-feedback-error">@_historyError</p>
+            }
+            else if (_history is not null)
+            {
+                <div class="mesh-stats">
+                    <div class="mesh-stat"><span class="mesh-stat-label">Readings in range</span><span class="mesh-stat-value">@_history.MatchCount</span></div>
+                    <div class="mesh-stat"><span class="mesh-stat-label">Tree nodes checked</span><span class="mesh-stat-value">@_history.NodesVisited</span></div>
+                    <div class="mesh-stat"><span class="mesh-stat-label">Total stored</span><span class="mesh-stat-value">@_history.TotalStored</span></div>
+                </div>
+
+                @if (_history.MatchCount > _history.ReturnedCount)
+                {
+                    <p class="mesh-note">Showing the first @_history.ReturnedCount readings of this range, newest first.</p>
+                }
+
+                @if (_history.TelemetryReadings.Count == 0)
+                {
+                    <p class="mesh-empty">No readings for this sensor in the chosen range.</p>
+                }
+                else
+                {
+                    <div class="mesh-table-wrap mesh-scroll">
+                        <table class="mesh-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var reading in _history.TelemetryReadings.AsEnumerable().Reverse())
+                                {
+                                    <tr>
+                                        <td class="mesh-mono">@FormatTime(reading.TimeStamp)</td>
+                                        <td>@reading.MetricName</td>
+                                        <td>@(reading.Value?.ToString() ?? "-") @reading.Unit</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        }
+    </section>
+</div>
+
+@code {
+    private const string MeshGatewayId = "GATEWAY";
+
+    private MeshTopologyDto? _topology;
+    private ReachabilityDto? _reach;
+    private MstDto? _mst;
+    private RouteDto? _route;
+    private ArchiveQueryResultDto? _history;
+
+    private Dictionary<string, MeshNodeDto> _nodes = new();
+    private MeshNodeDto? _gateway;
+    private HashSet<string> _mstLinks = new();
+    private HashSet<string> _routeLinks = new();
+    private HashSet<string> _normalLinks = new();
+    private HashSet<string> _isolated = new();
+
+    private PeriodicTimer? _liveTimer;
+    private DateTime _lastUpdated;
+    private string _macInput = string.Empty;
+    private string _trackError = string.Empty;
+    private string _historyError = string.Empty;
+    private string _feedback = string.Empty;
+    private bool _feedbackIsError;
+    private bool _busy;
+    private bool _historyLoading;
+
+    private string SelectedMacAddress { get => AppStateService.MeshSelectedDeviceMacAddress; set => AppStateService.MeshSelectedDeviceMacAddress = value; }
+    private string ZoneFilter { get => AppStateService.MeshZoneFilter; set => AppStateService.MeshZoneFilter = value; }
+    private bool ShowMst { get => AppStateService.MeshShowMst; set => AppStateService.MeshShowMst = value; }
+    private DateTime HistoryFrom { get => AppStateService.MeshHistoryFrom ?? DateTime.Now.AddHours(-1); set => AppStateService.MeshHistoryFrom = value; }
+    private DateTime HistoryTo { get => AppStateService.MeshHistoryTo ?? DateTime.Now; set => AppStateService.MeshHistoryTo = value; }
+
+    private int ProblemCount => (_reach?.DownCount ?? 0) + (_reach?.IsolatedCount ?? 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AppStateService.MeshHistoryTo is null)
+        {
+            AppStateService.MeshHistoryTo = DateTime.Now;
+            AppStateService.MeshHistoryFrom = DateTime.Now.AddHours(-1);
+        }
+
+        _macInput = SelectedMacAddress;
+
+        await RefreshAllAsync();
+
+        if (!string.IsNullOrEmpty(SelectedMacAddress) && SelectedMacAddress != MeshGatewayId)
+        {
+            await LoadHistoryAsync();
+        }
+
+        _liveTimer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        _ = PollLoopAsync();
+    }
+
+    private async Task PollLoopAsync()
+    {
+        while (_liveTimer is not null && await _liveTimer.WaitForNextTickAsync())
+        {
+            await RefreshAllAsync();
+        }
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        await Task.WhenAll(
+            LoadAsync<MeshTopologyDto>("api/mesh/topology", value => _topology = value),
+            LoadAsync<ReachabilityDto>($"api/mesh/reachability?mainZone={Uri.EscapeDataString(ZoneFilter)}", value => _reach = value),
+            LoadAsync<MstDto>("api/mesh/mst", value => _mst = value));
+
+        _nodes = _topology?.Nodes.ToDictionary(node => node.DeviceMacAddress) ?? new();
+        _gateway = _topology?.Nodes.FirstOrDefault(node => node.IsGateway);
+
+        // The selected sensor may have been unregistered since the last refresh
+        if (!string.IsNullOrEmpty(SelectedMacAddress) && !_nodes.ContainsKey(SelectedMacAddress))
+        {
+            SelectedMacAddress = string.Empty;
+            _macInput = string.Empty;
+            _history = null;
+        }
+
+        if (string.IsNullOrEmpty(SelectedMacAddress))
+        {
+            _route = null;
+        }
+        else
+        {
+            await LoadAsync<RouteDto>($"api/mesh/route/{Uri.EscapeDataString(SelectedMacAddress)}", value => _route = value);
+        }
+
+        BuildLinkSets();
+
+        if (_topology is not null)
+        {
+            _lastUpdated = DateTime.Now;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync<T>(string url, Action<T?> assign)
+    {
+        try
+        {
+            assign(await Http.GetFromJsonAsync<T>(url));
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to load {url}: {exception.Message}");
+        }
+    }
+
+    private void BuildLinkSets()
+    {
+        _mstLinks = _mst is null
+            ? new()
+            : _mst.Links.Select(link => LinkKey(link.From, link.To)).ToHashSet();
+
+        _routeLinks = PairsOf(_route?.Path);
+        _normalLinks = _route is { ReRouted: true } ? PairsOf(_route.NormalPath) : new();
+
+        _isolated = _reach is null
+            ? new()
+            : _reach.Isolated.Select(node => node.DeviceMacAddress).ToHashSet();
+    }
+
+    private static HashSet<string> PairsOf(List<MeshHopDto>? hops)
+    {
+        var pairs = new HashSet<string>();
+
+        if (hops is null)
+        {
+            return pairs;
+        }
+
+        for (var index = 1; index < hops.Count; index++)
+        {
+            pairs.Add(LinkKey(hops[index - 1].DeviceMacAddress, hops[index].DeviceMacAddress));
+        }
+
+        return pairs;
+    }
+
+    private static string LinkKey(string a, string b) =>
+        string.CompareOrdinal(a, b) < 0 ? $"{a}|{b}" : $"{b}|{a}";
+
+    // SELECTING A SENSOR
+
+    private async Task SelectAsync(string deviceMacAddress)
+    {
+        SelectedMacAddress = deviceMacAddress;
+        _macInput = deviceMacAddress;
+        _trackError = string.Empty;
+        _feedback = string.Empty;
+        _history = null;
+        _historyError = string.Empty;
+
+        await RefreshAllAsync();
+
+        if (deviceMacAddress != MeshGatewayId)
+        {
+            await LoadHistoryAsync();
+        }
+    }
+
+    // Accepts a full MAC address, or part of a MAC address or sensor name
+    private async Task TrackTypedAsync()
+    {
+        _trackError = string.Empty;
+        var text = _macInput.Trim();
+
+        if (text.Length == 0)
+        {
+            SelectedMacAddress = string.Empty;
+            _route = null;
+            _history = null;
+            BuildLinkSets();
+            return;
+        }
+
+        var nodes = _topology?.Nodes ?? new List<MeshNodeDto>();
+
+        var match = nodes.FirstOrDefault(node => string.Equals(node.DeviceMacAddress, text, StringComparison.OrdinalIgnoreCase))
+            ?? nodes.FirstOrDefault(node => node.DeviceMacAddress.Contains(text, StringComparison.OrdinalIgnoreCase)
+                                         || node.Label.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+        {
+            _trackError = $"No device matches \"{text}\".";
+            return;
+        }
+
+        await SelectAsync(match.DeviceMacAddress);
+    }
+
+    private async Task SetOnlineAsync(bool online)
+    {
+        if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _feedback = string.Empty;
+
+        try
+        {
+            var action = online ? "reconnect" : "disconnect";
+            var response = await Http.PostAsync($"api/stream/test/{action}/{Uri.EscapeDataString(SelectedMacAddress)}", null);
+
+            _feedbackIsError = !response.IsSuccessStatusCode;
+            _feedback = response.IsSuccessStatusCode
+                ? (online ? "Sensor restored. The mesh will use it again." : "Sensor switched off. Watch the mesh route around it.")
+                : "The server could not change this sensor's state.";
+        }
+        catch (Exception exception)
+        {
+            _feedbackIsError = true;
+            _feedback = $"Could not reach the server: {exception.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshAllAsync();
+    }
+
+    // HISTORICAL LOG
+
+    private async Task QuickRangeAsync(int minutes)
+    {
+        HistoryTo = DateTime.Now;
+        HistoryFrom = DateTime.Now.AddMinutes(-minutes);
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        _historyError = string.Empty;
+
+        if (string.IsNullOrEmpty(SelectedMacAddress) || SelectedMacAddress == MeshGatewayId)
+        {
+            _history = null;
+            return;
+        }
+
+        if (HistoryFrom > HistoryTo)
+        {
+            _history = null;
+            _historyError = "The start time must be before the end time.";
+            return;
+        }
+
+        _historyLoading = true;
+
+        try
+        {
+            var url = $"api/archive/{Uri.EscapeDataString(SelectedMacAddress)}" +
+                $"?from={Uri.EscapeDataString(ToUtcText(HistoryFrom))}" +
+                $"&to={Uri.EscapeDataString(ToUtcText(HistoryTo))}&limit=500";
+
+            var response = await Http.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _history = await response.Content.ReadFromJsonAsync<ArchiveQueryResultDto>();
+            }
+            else
+            {
+                _history = null;
+                _historyError = "Could not load the history for this sensor.";
+            }
+        }
+        catch (Exception exception)
+        {
+            _history = null;
+            _historyError = $"Could not reach the server: {exception.Message}";
+        }
+        finally
+        {
+            _historyLoading = false;
+        }
+    }
+
+    // The date pickers give local time. The API wants UTC
+    private static string ToUtcText(DateTime local) =>
+        DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime().ToString("o", CultureInfo.InvariantCulture);
+
+    private static string FormatTime(DateTime utc) =>
+        DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+    // DRAWING THE MAP
+
+    private IEnumerable<MeshLinkDto> OrderedLinks() => _topology!.Links.OrderBy(LinkRank);
+
+    // Plain links are drawn first and the highlighted ones on top of them
+    private int LinkRank(MeshLinkDto link)
+    {
+        var key = LinkKey(link.From, link.To);
+
+        if (_routeLinks.Contains(key)) return 3;
+        if (_normalLinks.Contains(key)) return 2;
+        if (ShowMst && _mstLinks.Contains(key)) return 1;
+        return 0;
+    }
+
+    private string LinkClass(MeshLinkDto link)
+    {
+        var key = LinkKey(link.From, link.To);
+
+        if (_routeLinks.Contains(key)) return "mesh-link mesh-link-route";
+        if (_normalLinks.Contains(key)) return "mesh-link mesh-link-normal";
+        if (ShowMst && _mstLinks.Contains(key)) return "mesh-link mesh-link-mst";
+
+        var down = (_nodes.TryGetValue(link.From, out var from) && !from.IsOnline)
+                || (_nodes.TryGetValue(link.To, out var to) && !to.IsOnline);
+
+        return down ? "mesh-link mesh-link-down" : "mesh-link";
+    }
+
+    private string NodeClass(MeshNodeDto node)
+    {
+        if (node.IsGateway) return "mesh-node mesh-node-gateway";
+        if (!node.IsOnline) return "mesh-node mesh-node-offline";
+        if (_isolated.Contains(node.DeviceMacAddress)) return "mesh-node mesh-node-isolated";
+        return "mesh-node mesh-node-online";
+    }
+
+    private static string ShortId(string deviceMacAddress) =>
+        deviceMacAddress.Length > 5 ? deviceMacAddress[^5..] : deviceMacAddress;
+
+    // Decimal commas in some cultures would break SVG coordinates, so always use a dot
+    private static string F(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string RouteBadgeClass()
+    {
+        if (_route is null || !_route.RouteFound) return "mesh-badge-bad";
+        return _route.ReRouted ? "mesh-badge-warn" : "mesh-badge-ok";
+    }
+
+    private string RouteBadgeText()
+    {
+        if (_route is null || !_route.RouteFound) return "No route";
+        return _route.ReRouted ? "Re-routed" : "Route OK";
+    }
+
+    public void Dispose()
+    {
+        _liveTimer?.Dispose();
+        _liveTimer = null;
+    }
+}
